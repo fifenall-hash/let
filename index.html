@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Let's Number!</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 0; background-color: #f5f5f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; touch-action: manipulation; }
+        
+        /* 모바일 친화적 하단 메뉴 바 */
+        #menu-bar { background: white; padding: 10px; display: flex; gap: 10px; overflow-x: auto; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); z-index: 10; order: 2; }
+        .menu-btn { padding: 12px 15px; font-size: 16px; font-weight: bold; background: #e0e0e0; border: none; border-radius: 8px; white-space: nowrap; cursor: pointer; }
+        .menu-btn.active { background: #A0E8AF; }
+        
+        /* 메인 게임 영역 */
+        #main-frame { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; max-width: 600px; margin: 0 auto; overflow-y: auto; padding-top: 20px; order: 1; }
+        #question-text { font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 20px; cursor: pointer; padding: 0 10px; }
+        
+        /* 보드 (배경 이미지 영역) */
+        #board { position: relative; width: 320px; height: 350px; background-color: white; border: 2px solid #ccc; border-radius: 10px; margin-bottom: 15px; }
+        .item-slot { width: 50px; height: 50px; position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: all 0.2s; }
+        
+        /* 아이템 선택 풀 */
+        #item-pool { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; padding: 10px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;}
+        .pool-item { width: 50px; height: 50px; background-size: contain; background-repeat: no-repeat; background-position: center; cursor: pointer; }
+        
+        /* 하단 조작 버튼들 */
+        #controls { display: flex; gap: 15px; margin-bottom: 20px; }
+        .action-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
+        #undo-btn { background: #FFB6C1; }
+        #submit-btn { background: #FFD700; }
+        
+        /* 터치 시작 오버레이 (오디오 재생 권한용) */
+        #start-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-size: 24px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- 모바일 오디오 권한 획득용 화면 -->
+    <div id="start-overlay" onclick="initApp()">
+        <img src="images/로고.png" alt="Let's Number" style="max-width: 80%; margin-bottom: 20px;" onerror="this.style.display='none'">
+        화면을 터치해서 시작하세요!
+    </div>
+
+    <!-- 메인 게임 영역 -->
+    <div id="main-frame">
+        <div id="question-text" onclick="playQuestionSound()">게임을 불러오는 중...</div>
+        
+        <div id="board">
+            <!-- 놓여진 아이템들이 여기에 추가됩니다 -->
+        </div>
+
+        <div id="item-pool">
+            <!-- 선택 가능한 아이템들이 여기에 생성됩니다 -->
+        </div>
+
+        <div id="controls">
+            <button id="undo-btn" class="action-btn" onclick="undoItem()">하나 지우기</button>
+            <button id="submit-btn" class="action-btn" onclick="checkAnswer()">전달</button>
+        </div>
+    </div>
+
+    <!-- 하단 메뉴 바 -->
+    <div id="menu-bar">
+        <button class="menu-btn active">숫자 세기 놀이</button>
+        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">더하기 놀이</button>
+        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">빼기 놀이</button>
+        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">곱하기 놀이</button>
+        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">시계 보기 놀이</button>
+    </div>
+
+<script>
+    const items = ['단추', '딸기', '블록', '빗', '빵', '수박', '숟가락', '연필', '자동차', '칫솔'];
+    
+    // 고유어 딕셔너리 (음원 파일명 매핑용)
+    const koreanNumbers = { 1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물" };
+
+    let targetItem = "";
+    let targetNumber = 0;
+    let placedItems = []; // 현재 보드에 놓인 아이템 목록
+    let isAnswered = false;
+
+    // 사운드 재생 헬퍼 함수
+    function playSound(filename) {
+        let audio = new Audio(`sounds/${filename}`);
+        audio.play().catch(e => console.log("Sound play error:", e));
+    }
+
+    function playQuestionSound() {
+        if(isAnswered) return;
+        playSound(`${targetItem}.wav`);
+        setTimeout(() => playSound(`${targetNumber}개줄래.wav`), 800);
+    }
+
+    // 앱 초기화 (화면 최초 터치 시)
+    function initApp() {
+        document.getElementById('start-overlay').style.display = 'none';
+        startCountingGame();
+    }
+
+    // 게임 시작 로직
+    function startCountingGame() {
+        isAnswered = false;
+        placedItems = [];
+        
+        targetItem = items[Math.floor(Math.random() * items.length)];
+        targetNumber = Math.floor(Math.random() * 20) + 1;
+        
+        document.getElementById('question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
+        
+        renderItemPool();
+        renderBoard();
+        playQuestionSound();
+    }
+
+    // 하단 선택 가능한 아이템 렌더링
+    function renderItemPool() {
+        const pool = document.getElementById('item-pool');
+        pool.innerHTML = '';
+        items.forEach(item => {
+            let el = document.createElement('div');
+            el.className = 'pool-item';
+            el.style.backgroundImage = `url('images/${item}.png')`;
+            el.onclick = () => placeItem(item);
+            pool.appendChild(el);
+        });
+    }
+
+    // 보드에 아이템 배치
+    function placeItem(item) {
+        if(isAnswered || placedItems.length >= 20) return;
+        
+        placedItems.push(item);
+        
+        // 아이템 개수 소리 재생 (고유어 기준)
+        let currentCount = placedItems.length;
+        if(koreanNumbers[currentCount]) {
+            playSound(`${koreanNumbers[currentCount]}.wav`);
+        }
+        
+        renderBoard();
+    }
+
+    // 모바일용 '하나 지우기' 기능 (PC의 우클릭 대체)
+    function undoItem() {
+        if(isAnswered || placedItems.length === 0) return;
+        placedItems.pop();
+        
+        let currentCount = placedItems.length;
+        if(currentCount > 0 && koreanNumbers[currentCount]) {
+            playSound(`${koreanNumbers[currentCount]}.wav`);
+        }
+        
+        renderBoard();
+    }
+
+    // 놓여진 아이템들을 5열로 정렬하여 화면에 그리기
+    function renderBoard() {
+        const board = document.getElementById('board');
+        board.innerHTML = ''; // 초기화
+        
+        const startX = 20;
+        const startY = 280;
+        const gapX = 55;
+        const gapY = 60;
+
+        placedItems.forEach((item, index) => {
+            let col = index % 5;
+            let row = Math.floor(index / 5);
+            
+            let el = document.createElement('div');
+            el.className = 'item-slot';
+            el.style.backgroundImage = `url('images/${item}.png')`;
+            el.style.left = `${startX + (col * gapX)}px`;
+            el.style.top = `${startY - (row * gapY)}px`;
+            
+            board.appendChild(el);
+        });
+    }
+
+    // 정답 확인 로직
+    function checkAnswer() {
+        if(isAnswered) return;
+        
+        // 올바른 종류의 아이템만 목표 개수만큼 놓았는지 확인
+        let isCorrect = (placedItems.length === targetNumber) && placedItems.every(item => item === targetItem);
+
+        if(isCorrect) {
+            isAnswered = true;
+            document.getElementById('question-text').innerText = "고마워!";
+            playSound("고마워.wav");
+            
+            // 2초 후 새 문제 시작
+            setTimeout(startCountingGame, 2000);
+        } else {
+            document.getElementById('question-text').innerText = "다시 해보자.";
+            playSound("다시해보자.wav");
+            
+            // 틀리면 보드 초기화
+            placedItems = [];
+            renderBoard();
+            
+            setTimeout(() => {
+                if(!isAnswered) {
+                    document.getElementById('question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
+                    playQuestionSound();
+                }
+            }, 2000);
+        }
+    }
+</script>
+</body>
+</html>

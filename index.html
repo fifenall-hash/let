@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        /* 기본 브라우저 여백 제거 및 세로 분할 레이아웃 */
+        /* 1. 기본 브라우저 여백 제거 및 세로 분할 레이아웃 */
         body {
             margin: 0;
             padding: 0;
@@ -17,7 +17,7 @@
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
 
-        /* 게임 화면이 중앙에 위치할 상단 영역 */
+        /* 2. 게임 화면이 중앙에 위치할 상단 영역 (전체 높이의 85%) */
         #app-wrapper {
             flex: 1;
             display: flex;
@@ -28,37 +28,42 @@
             width: 100%;
         }
 
-        /* 16:9 비율 및 흔들리지 않는 레이아웃이 적용된 메인 컨테이너 */
+        /* 3. 절대 흔들리지 않는 16:9 메인 컨테이너 */
         #app-container {
-            position: relative;
-            max-width: 100%;
-            max-height: 100%;
+            /* 화면 가로/세로 길이에 맞춰 16:9 상자의 최대 크기를 수학적으로 고정합니다. */
+            width: 100%;
+            height: 100%;
+            max-width: calc(85vh * (16 / 9));
+            max-height: calc(100vw * (9 / 16));
             aspect-ratio: 16 / 9;
             background-color: #f5f5f5;
-            display: flex;
+            
+            /* [핵심] Flex 대신 Grid를 사용하여 3개의 칸을 강제로 고정합니다. */
+            display: grid;
+            grid-template-columns: 22% 58% 20%;
+            
             overflow: hidden;
             box-sizing: border-box;
-            
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
         }
 
-        /* 하단 도구 바 가림을 방지하는 안전 영역 (약 10% 추가 확대) */
+        /* 4. 하단 안전 영역 (전체의 15%) */
         #bottom-safe-area {
-            height: 15vh; /* 12vh에서 15vh로 증가 */
+            height: 15vh;
             min-height: 90px; 
             width: 100%;
             background-color: #000;
         }
 
         /* ---------------------------------------------------
-           너비 고정 영역: 세 구역의 비율을 절대 변경되지 않게 강제합니다.
+           영역별 고정 스타일 (Grid 내부에 배치됨)
         --------------------------------------------------- */
         
-        /* 1. 좌측 메뉴 프레임 (항상 전체의 22% 차지) */
+        /* 첫 번째 칸: 좌측 메뉴 (22%) */
         #menu-frame {
-            flex: 0 0 22%;
+            width: 100%;
             height: 100%;
             background-color: white;
             display: flex;
@@ -66,6 +71,7 @@
             align-items: center;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             z-index: 10;
+            overflow: hidden; /* 내용이 넘쳐도 틀을 유지 */
         }
 
         .menu-logo {
@@ -96,9 +102,9 @@
             color: black;
         }
 
-        /* 2. 중앙 인게임 영역 (항상 전체의 58% 차지) */
+        /* 두 번째 칸: 중앙 인게임 영역 (58%) */
         #game-area {
-            flex: 0 0 58%;
+            width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -107,14 +113,16 @@
             padding: 20px;
             box-sizing: border-box;
             position: relative;
+            overflow: hidden; /* 내부 게임 아이템이 레이아웃을 밀어내지 못하게 함 */
         }
 
-        /* 3. 우측 배너 트레이 영역 (항상 전체의 20% 차지) */
+        /* 세 번째 칸: 우측 배너 트레이 영역 (20%) */
         #banner-area {
-            flex: 0 0 20%;
+            width: 100%;
             height: 100%;
             padding: 20px 20px 20px 0;
             box-sizing: border-box;
+            overflow: hidden;
         }
 
         #banner-frame {
@@ -191,7 +199,6 @@
             cursor: pointer;
         }
 
-        /* 옵션 체크박스 영역 */
         .options-bar {
             display: flex;
             gap: 15px;
@@ -208,7 +215,7 @@
     <div id="app-wrapper">
         <div id="app-container">
             
-            <!-- 좌측 메뉴 고정 영역 (22%) -->
+            <!-- 첫 번째 칸: 좌측 메뉴 (22%) -->
             <div id="menu-frame">
                 <img src="images/로고.png" alt="Let's Number Logo" class="menu-logo" onerror="this.src=''">
                 <button class="menu-btn" onclick="startGame('숫자 세기 놀이')">숫자 세기 놀이</button>
@@ -218,13 +225,12 @@
                 <button class="menu-btn" onclick="startGame('시계 보기 놀이')">시계 보기 놀이</button>
             </div>
 
-            <!-- 중앙 게임 고정 영역 (58%) -->
+            <!-- 두 번째 칸: 중앙 게임 영역 (58%) -->
             <div id="game-area">
                 <h1 style="color: #888; font-size: 3vw; text-align: center;">왼쪽에서 메뉴를 선택하세요.</h1>
             </div>
             
-            <!-- 우측 갈색 물건 트레이 고정 영역 (20%) -->
-            <!-- display:none을 제거하여 항상 자리를 차지하게 만들어 화면이 흔들리지 않습니다. -->
+            <!-- 세 번째 칸: 우측 배너 영역 (20%) -->
             <div id="banner-area">
                 <div id="banner-frame">
                     <!-- 획득한 아이템들이 여기에 추가됩니다. -->
@@ -234,10 +240,9 @@
         </div>
     </div>
 
-    <!-- 하단 여백 (안전 영역) -->
+    <!-- 하단 안전 영역 (전체 높이의 15%) -->
     <div id="bottom-safe-area"></div>
 
-    <!-- 배경음악 -->
     <audio id="bgm-player" loop>
         <source src="sounds_basic/bgm.wav" type="audio/wav">
     </audio>
@@ -290,7 +295,6 @@
 
     function startGame(gameName) {
         currentGame = gameName;
-        // 메뉴 전환 시 레이아웃 변동을 막기 위해 banner-frame은 처음부터 그려져 있도록 CSS 구조를 수정했습니다.
         updateBanner();
 
         if (gameName === '숫자 세기 놀이') {

@@ -5,209 +5,423 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; margin: 0; background-color: #f5f5f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; touch-action: manipulation; }
-        
-        /* 모바일 친화적 하단 메뉴 바 */
-        #menu-bar { background: white; padding: 10px; display: flex; gap: 10px; overflow-x: auto; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); z-index: 10; order: 2; }
-        .menu-btn { padding: 12px 15px; font-size: 16px; font-weight: bold; background: #e0e0e0; border: none; border-radius: 8px; white-space: nowrap; cursor: pointer; }
-        .menu-btn.active { background: #A0E8AF; }
-        
-        /* 메인 게임 영역 */
-        #main-frame { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; max-width: 600px; margin: 0 auto; overflow-y: auto; padding-top: 20px; order: 1; }
-        #question-text { font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 20px; cursor: pointer; padding: 0 10px; }
-        
-        /* 보드 (배경 이미지 영역) */
-        #board { position: relative; width: 320px; height: 350px; background-color: white; border: 2px solid #ccc; border-radius: 10px; margin-bottom: 15px; }
-        .item-slot { width: 50px; height: 50px; position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center; transition: all 0.2s; }
-        
-        /* 아이템 선택 풀 */
-        #item-pool { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; padding: 10px; background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;}
-        .pool-item { width: 50px; height: 50px; background-size: contain; background-repeat: no-repeat; background-position: center; cursor: pointer; }
-        
-        /* 하단 조작 버튼들 */
-        #controls { display: flex; gap: 15px; margin-bottom: 20px; }
-        .action-btn { padding: 15px 30px; font-size: 20px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; }
-        #undo-btn { background: #FFB6C1; }
-        #submit-btn { background: #FFD700; }
-        
-        /* 터치 시작 오버레이 (오디오 재생 권한용) */
-        #start-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; font-size: 24px; font-weight: bold; }
+        /* 기본 브라우저 여백 제거 및 배경 설정 */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+        }
+
+        /* 2:1 비율을 유지하는 메인 앱 컨테이너 */
+        #app-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: calc(100vh * 2);
+            max-height: calc(100vw / 2);
+            aspect-ratio: 2 / 1;
+            background-color: #f5f5f5;
+            display: flex;
+            overflow: hidden;
+            
+            /* 앱과 같은 사용자 경험을 위한 터치 제어 */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* 좌측 메뉴 프레임 */
+        #menu-frame {
+            width: 25%;
+            height: 100%;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .menu-logo {
+            width: 80%;
+            margin: 40px 0;
+            object-fit: contain;
+        }
+
+        .menu-btn {
+            width: 80%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 1.5vw;
+            font-weight: bold;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .menu-btn:active {
+            transform: scale(0.95);
+        }
+
+        .menu-btn.completed {
+            background-color: #A0E8AF;
+            color: black;
+        }
+
+        /* 중앙 및 우측 메인 게임 영역 */
+        #main-frame {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            position: relative;
+        }
+
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 우측 배너 나무 트레이 */
+        #banner-frame {
+            width: 20%;
+            height: 90%;
+            background-color: #D2B48C;
+            border: 5px solid #8B4513;
+            border-radius: 10px;
+            margin-left: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .banner-item {
+            width: 45%;
+            aspect-ratio: 1;
+            margin: 2.5%;
+            background-size: cover;
+        }
+
+        /* 게임 내부 요소 스타일 */
+        .question-text {
+            font-size: 2.5vw;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .items-tray {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 15px;
+        }
+
+        .draggable-item {
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        #drop-zone {
+            width: 60%;
+            height: 50%;
+            border: 3px dashed #ccc;
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            flex-wrap: wrap-reverse;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .placed-item {
+            width: 60px;
+            height: 60px;
+            position: relative;
+        }
+
+        .submit-btn {
+            padding: 10px 30px;
+            font-size: 2vw;
+            font-weight: bold;
+            background-color: #FFD700;
+            border: none;
+            border-radius: 15px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        /* 옵션 체크박스 영역 */
+        .options-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2vw;
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- 모바일 오디오 권한 획득용 화면 -->
-    <div id="start-overlay" onclick="initApp()">
-        <img src="images/로고.png" alt="Let's Number" style="max-width: 80%; margin-bottom: 20px;" onerror="this.style.display='none'">
-        화면을 터치해서 시작하세요!
-    </div>
-
-    <!-- 메인 게임 영역 -->
-    <div id="main-frame">
-        <div id="question-text" onclick="playQuestionSound()">게임을 불러오는 중...</div>
-        
-        <div id="board">
-            <!-- 놓여진 아이템들이 여기에 추가됩니다 -->
+    <div id="app-container">
+        <!-- 좌측 메뉴 영역 -->
+        <div id="menu-frame">
+            <img src="images/로고.png" alt="Let's Number Logo" class="menu-logo" onerror="this.src=''">
+            <button class="menu-btn" onclick="startGame('숫자 세기 놀이')">숫자 세기 놀이</button>
+            <button class="menu-btn" onclick="startGame('더하기 놀이')">더하기 놀이</button>
+            <button class="menu-btn" onclick="startGame('빼기 놀이')">빼기 놀이</button>
+            <button class="menu-btn" onclick="startGame('곱하기 놀이')">곱하기 놀이</button>
+            <button class="menu-btn" onclick="startGame('시계 보기 놀이')">시계 보기 놀이</button>
         </div>
 
-        <div id="item-pool">
-            <!-- 선택 가능한 아이템들이 여기에 생성됩니다 -->
-        </div>
-
-        <div id="controls">
-            <button id="undo-btn" class="action-btn" onclick="undoItem()">하나 지우기</button>
-            <button id="submit-btn" class="action-btn" onclick="checkAnswer()">전달</button>
+        <!-- 메인 게임 영역 -->
+        <div id="main-frame">
+            <div id="game-area">
+                <h1 style="color: #888; font-size: 3vw; text-align: center;">왼쪽에서 메뉴를 선택하세요.</h1>
+            </div>
+            
+            <!-- 우측 배너 영역 -->
+            <div id="banner-frame" style="display: none;">
+                <!-- 획득한 아이템들이 여기에 추가됩니다. -->
+            </div>
         </div>
     </div>
 
-    <!-- 하단 메뉴 바 -->
-    <div id="menu-bar">
-        <button class="menu-btn active">숫자 세기 놀이</button>
-        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">더하기 놀이</button>
-        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">빼기 놀이</button>
-        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">곱하기 놀이</button>
-        <button class="menu-btn" onclick="alert('다음 메뉴들은 추후 이어서 추가될 예정입니다!')">시계 보기 놀이</button>
-    </div>
+    <!-- 배경음악 요소 -->
+    <audio id="bgm-player" loop>
+        <source src="sounds_basic/bgm.wav" type="audio/wav">
+    </audio>
 
 <script>
+    // 상태 및 데이터 관리
     const items = ['단추', '딸기', '블록', '빗', '빵', '수박', '숟가락', '연필', '자동차', '칫솔'];
-    
-    // 고유어 딕셔너리 (음원 파일명 매핑용)
-    const koreanNumbers = { 1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물" };
+    const solvedItems = {
+        '숫자 세기 놀이': [],
+        '더하기 놀이': [],
+        '빼기 놀이': [],
+        '곱하기 놀이': [],
+        '시계 보기 놀이': []
+    };
 
+    let currentGame = null;
     let targetItem = "";
     let targetNumber = 0;
-    let placedItems = []; // 현재 보드에 놓인 아이템 목록
-    let isAnswered = false;
+    let placedItemsCount = 0;
 
-    // 사운드 재생 헬퍼 함수
-    function playSound(filename) {
-        let audio = new Audio(`sounds/${filename}`);
-        audio.play().catch(e => console.log("Sound play error:", e));
+    let soundType = "고유어"; // 고유어 or 한자어
+    let soundEnabled = true;
+
+    // 한국어/한자어 변환 매핑
+    const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
+    const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
+
+    // 🔊 오디오 라우팅 시스템 (핵심!)
+    // 파일명에 숫자가 포함되어 있으면 sounds_number, 아니면 sounds_basic에서 찾습니다.
+    let currentAudio = null;
+    function playSound(fileName) {
+        if (currentAudio) currentAudio.pause();
+        
+        // 파일명이 숫자로 시작하거나 숫자를 포함하는 경우 (정규식 검사)
+        const isNumberSound = /^\d+/.test(fileName) || /\[고유어\]/.test(fileName);
+        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
+        
+        currentAudio = new Audio(folder + fileName);
+        currentAudio.play().catch(e => console.log("Audio play failed (maybe user didn't interact yet):", e));
+        return currentAudio;
     }
 
-    function playQuestionSound() {
-        if(isAnswered) return;
-        playSound(`${targetItem}.wav`);
-        setTimeout(() => playSound(`${targetNumber}개줄래.wav`), 800);
+    function playSoundSequence(fileNames) {
+        if (fileNames.length === 0) return;
+        const audio = playSound(fileNames[0]);
+        audio.onended = () => {
+            playSoundSequence(fileNames.slice(1));
+        };
     }
 
-    // 앱 초기화 (화면 최초 터치 시)
-    function initApp() {
-        document.getElementById('start-overlay').style.display = 'none';
-        startCountingGame();
-    }
+    // BGM 시작 (사용자의 첫 클릭/터치 시 재생)
+    document.body.addEventListener('click', () => {
+        const bgm = document.getElementById('bgm-player');
+        if (bgm.paused) bgm.play().catch(e => console.log("BGM play error", e));
+    }, { once: true });
 
-    // 게임 시작 로직
-    function startCountingGame() {
-        isAnswered = false;
-        placedItems = [];
-        
-        targetItem = items[Math.floor(Math.random() * items.length)];
-        targetNumber = Math.floor(Math.random() * 20) + 1;
-        
-        document.getElementById('question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
-        
-        renderItemPool();
-        renderBoard();
-        playQuestionSound();
-    }
 
-    // 하단 선택 가능한 아이템 렌더링
-    function renderItemPool() {
-        const pool = document.getElementById('item-pool');
-        pool.innerHTML = '';
-        items.forEach(item => {
-            let el = document.createElement('div');
-            el.className = 'pool-item';
-            el.style.backgroundImage = `url('images/${item}.png')`;
-            el.onclick = () => placeItem(item);
-            pool.appendChild(el);
-        });
-    }
+    // 🎮 게임 시작 관리
+    function startGame(gameName) {
+        currentGame = gameName;
+        document.getElementById('banner-frame').style.display = 'flex';
+        updateBanner();
 
-    // 보드에 아이템 배치
-    function placeItem(item) {
-        if(isAnswered || placedItems.length >= 20) return;
-        
-        placedItems.push(item);
-        
-        // 아이템 개수 소리 재생 (고유어 기준)
-        let currentCount = placedItems.length;
-        if(koreanNumbers[currentCount]) {
-            playSound(`${koreanNumbers[currentCount]}.wav`);
-        }
-        
-        renderBoard();
-    }
-
-    // 모바일용 '하나 지우기' 기능 (PC의 우클릭 대체)
-    function undoItem() {
-        if(isAnswered || placedItems.length === 0) return;
-        placedItems.pop();
-        
-        let currentCount = placedItems.length;
-        if(currentCount > 0 && koreanNumbers[currentCount]) {
-            playSound(`${koreanNumbers[currentCount]}.wav`);
-        }
-        
-        renderBoard();
-    }
-
-    // 놓여진 아이템들을 5열로 정렬하여 화면에 그리기
-    function renderBoard() {
-        const board = document.getElementById('board');
-        board.innerHTML = ''; // 초기화
-        
-        const startX = 20;
-        const startY = 280;
-        const gapX = 55;
-        const gapY = 60;
-
-        placedItems.forEach((item, index) => {
-            let col = index % 5;
-            let row = Math.floor(index / 5);
-            
-            let el = document.createElement('div');
-            el.className = 'item-slot';
-            el.style.backgroundImage = `url('images/${item}.png')`;
-            el.style.left = `${startX + (col * gapX)}px`;
-            el.style.top = `${startY - (row * gapY)}px`;
-            
-            board.appendChild(el);
-        });
-    }
-
-    // 정답 확인 로직
-    function checkAnswer() {
-        if(isAnswered) return;
-        
-        // 올바른 종류의 아이템만 목표 개수만큼 놓았는지 확인
-        let isCorrect = (placedItems.length === targetNumber) && placedItems.every(item => item === targetItem);
-
-        if(isCorrect) {
-            isAnswered = true;
-            document.getElementById('question-text').innerText = "고마워!";
-            playSound("고마워.wav");
-            
-            // 2초 후 새 문제 시작
-            setTimeout(startCountingGame, 2000);
+        if (gameName === '숫자 세기 놀이') {
+            initCountingGame();
+        } else if (gameName === '더하기 놀이') {
+            initAdditionGame();
         } else {
-            document.getElementById('question-text').innerText = "다시 해보자.";
-            playSound("다시해보자.wav");
+            // 다른 놀이의 경우 이곳에 추가 구현하시면 됩니다.
+            document.getElementById('game-area').innerHTML = `
+                <h1 style="color: #888;">${gameName} 업데이트 준비 중입니다!</h1>
+            `;
+        }
+    }
+
+    // 🧩 1. 숫자 세기 놀이 구현
+    function initCountingGame() {
+        const availableItems = items.filter(i => !solvedItems['숫자 세기 놀이'].includes(i));
+        if (availableItems.length === 0) {
+            showCompletionScreen('숫자 세기 놀이');
+            return;
+        }
+
+        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+        targetNumber = Math.floor(Math.random() * 20) + 1;
+        placedItemsCount = 0;
+
+        const gameArea = document.getElementById('game-area');
+        gameArea.innerHTML = `
+            <div class="options-bar">
+                <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
+                <label><input type="radio" name="sndType" value="고유어" checked onchange="soundType = this.value"> 고유어</label>
+                <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
+            </div>
             
-            // 틀리면 보드 초기화
-            placedItems = [];
-            renderBoard();
-            
+            <div class="question-text" onclick="replayQuestion()">
+                ${targetItem} ${targetNumber}개 줄래?
+            </div>
+
+            <div id="drop-zone" onclick="placeItem()">
+                <!-- 클릭하면 아이템이 여기에 배치됩니다 -->
+            </div>
+
+            <div class="items-tray">
+                ${availableItems.map(item => `
+                    <img src="images/${item}.png" class="draggable-item" alt="${item}" onclick="selectItem('${item}')" onerror="this.src=''">
+                `).join('')}
+            </div>
+
+            <button class="submit-btn" onclick="checkCountingAnswer()">전달</button>
+        `;
+
+        playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]);
+    }
+
+    let selectedItemForPlacement = null;
+
+    function selectItem(itemName) {
+        selectedItemForPlacement = itemName;
+        // 웹 브라우저 커서를 선택한 이미지로 변경
+        document.getElementById('drop-zone').style.cursor = `url('images/${itemName}.png') 30 30, pointer`;
+    }
+
+    function placeItem() {
+        if (!selectedItemForPlacement || placedItemsCount >= 20) return;
+        
+        placedItemsCount++;
+        const dropZone = document.getElementById('drop-zone');
+        const img = document.createElement('img');
+        img.src = `images/${selectedItemForPlacement}.png`;
+        img.className = 'placed-item';
+        // 우클릭 시 삭제 기능
+        img.oncontextmenu = (e) => { e.preventDefault(); removePlacedItem(img); };
+        dropZone.appendChild(img);
+
+        if (soundEnabled) {
+            let numStr = soundType === "고유어" ? koreanNumbers[placedItemsCount] : sinoNumbers[placedItemsCount];
+            playSound(`${numStr}.wav`);
+        }
+    }
+
+    function removePlacedItem(imgElement) {
+        if (placedItemsCount > 0) {
+            imgElement.remove();
+            placedItemsCount--;
+        }
+    }
+
+    function replayQuestion() {
+        playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]);
+    }
+
+    function checkCountingAnswer() {
+        const dropZoneItems = document.getElementById('drop-zone').children;
+        let isCorrect = true;
+
+        if (dropZoneItems.length !== targetNumber) isCorrect = false;
+        
+        // 올바른 아이템을 선택했는지 확인
+        for (let img of dropZoneItems) {
+            if (!img.src.includes(targetItem)) {
+                isCorrect = false;
+                break;
+            }
+        }
+
+        if (isCorrect) {
+            playSound('고마워.wav');
+            solvedItems['숫자 세기 놀이'].push(targetItem);
+            updateBanner();
+            setTimeout(initCountingGame, 2000);
+        } else {
+            playSound('다시해보자.wav');
+            document.querySelector('.question-text').innerText = "다시 해보자.";
             setTimeout(() => {
-                if(!isAnswered) {
-                    document.getElementById('question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
-                    playQuestionSound();
-                }
+                document.querySelector('.question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
+                document.getElementById('drop-zone').innerHTML = ''; // 오답 시 보드 초기화
+                placedItemsCount = 0;
             }, 2000);
         }
     }
+
+    // 🧩 2. 우측 나무 트레이(배너) 업데이트
+    function updateBanner() {
+        const banner = document.getElementById('banner-frame');
+        banner.innerHTML = '';
+        const currentSolved = solvedItems[currentGame] || [];
+        
+        currentSolved.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'banner-item';
+            div.style.backgroundImage = `url('images/${item}.png')`;
+            banner.appendChild(div);
+        });
+    }
+
+    // 🧩 3. 완료 화면
+    function showCompletionScreen(gameName) {
+        const gameArea = document.getElementById('game-area');
+        gameArea.innerHTML = `
+            <h1 style="font-size: 4vw; color: black;">다 했어. 고마워!</h1>
+            <p style="font-size: 2vw; color: blue;">🎉 ${gameName} 마스터! 🎉</p>
+        `;
+        playSound('다했어고마워.wav');
+
+        // 왼쪽 메뉴 버튼 상태 변경
+        const buttons = document.querySelectorAll('.menu-btn');
+        buttons.forEach(btn => {
+            if(btn.innerText.includes(gameName)) btn.classList.add('completed');
+        });
+    }
+
+    // 더하기 놀이 등 추가 로직은 동일한 패턴으로 `gameArea.innerHTML`을 교체하며 작성합니다.
 </script>
+
 </body>
 </html>

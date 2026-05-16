@@ -5,28 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        /* 기본 브라우저 여백 제거 및 배경 설정 */
+        /* 1. 전체 화면을 세로(위아래)로 분할하도록 설정합니다. */
         body {
             margin: 0;
             padding: 0;
             background-color: #333;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column; /* 세로 방향으로 요소 배치 */
             height: 100vh;
             overflow: hidden;
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
 
-        /* 1.5:1 비율을 유지하는 메인 앱 컨테이너 */
+        /* 2. 실제 게임 화면이 중앙에 위치할 상단 영역입니다. */
+        #app-wrapper {
+            flex: 1; /* 하단 바를 제외한 남은 공간을 모두 차지합니다. */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        /* 3. 1.5:1 비율을 유지하는 메인 앱 컨테이너 */
         #app-container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            /* 높이의 1.5배를 최대 너비로 설정 */
-            max-width: calc(100vh * 1.5);
-            /* 너비를 1.5로 나눈 값을 최대 높이로 설정 */
-            max-height: calc(100vw / 1.5);
+            /* 부모 공간(#app-wrapper) 안에서 가장 크게 확장하되 1.5:1 비율 유지 */
+            max-width: 100%;
+            max-height: 100%;
             aspect-ratio: 1.5 / 1;
             background-color: #f5f5f5;
             display: flex;
@@ -36,6 +42,14 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
+        }
+
+        /* 4. 태블릿 하단 도구 바 가림을 방지하는 검은색 안전 영역 */
+        #bottom-safe-area {
+            height: 12vh; /* 화면 전체 높이의 12%를 빈 공간으로 둡니다. */
+            min-height: 80px; /* 화면이 작아져도 최소 80px의 두께는 보장합니다. */
+            width: 100%;
+            background-color: #000; /* 시선이 분산되지 않도록 완벽한 검정색 적용 */
         }
 
         /* 좌측 메뉴 프레임 */
@@ -185,29 +199,35 @@
 </head>
 <body>
 
-    <div id="app-container">
-        <!-- 좌측 메뉴 영역 -->
-        <div id="menu-frame">
-            <img src="images/로고.png" alt="Let's Number Logo" class="menu-logo" onerror="this.src=''">
-            <button class="menu-btn" onclick="startGame('숫자 세기 놀이')">숫자 세기 놀이</button>
-            <button class="menu-btn" onclick="startGame('더하기 놀이')">더하기 놀이</button>
-            <button class="menu-btn" onclick="startGame('빼기 놀이')">빼기 놀이</button>
-            <button class="menu-btn" onclick="startGame('곱하기 놀이')">곱하기 놀이</button>
-            <button class="menu-btn" onclick="startGame('시계 보기 놀이')">시계 보기 놀이</button>
-        </div>
-
-        <!-- 메인 게임 영역 -->
-        <div id="main-frame">
-            <div id="game-area">
-                <h1 style="color: #888; font-size: 3vw; text-align: center;">왼쪽에서 메뉴를 선택하세요.</h1>
+    <!-- 화면을 안전하게 띄워줄 상단 래퍼 영역 -->
+    <div id="app-wrapper">
+        <div id="app-container">
+            <!-- 좌측 메뉴 영역 -->
+            <div id="menu-frame">
+                <img src="images/로고.png" alt="Let's Number Logo" class="menu-logo" onerror="this.src=''">
+                <button class="menu-btn" onclick="startGame('숫자 세기 놀이')">숫자 세기 놀이</button>
+                <button class="menu-btn" onclick="startGame('더하기 놀이')">더하기 놀이</button>
+                <button class="menu-btn" onclick="startGame('빼기 놀이')">빼기 놀이</button>
+                <button class="menu-btn" onclick="startGame('곱하기 놀이')">곱하기 놀이</button>
+                <button class="menu-btn" onclick="startGame('시계 보기 놀이')">시계 보기 놀이</button>
             </div>
-            
-            <!-- 우측 배너 영역 -->
-            <div id="banner-frame" style="display: none;">
-                <!-- 획득한 아이템들이 여기에 추가됩니다. -->
+
+            <!-- 메인 게임 영역 -->
+            <div id="main-frame">
+                <div id="game-area">
+                    <h1 style="color: #888; font-size: 3vw; text-align: center;">왼쪽에서 메뉴를 선택하세요.</h1>
+                </div>
+                
+                <!-- 우측 배너 영역 -->
+                <div id="banner-frame" style="display: none;">
+                    <!-- 획득한 아이템들이 여기에 추가됩니다. -->
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- 가장 하단의 태블릿 툴바용 빈 구역 -->
+    <div id="bottom-safe-area"></div>
 
     <!-- 배경음악 요소 -->
     <audio id="bgm-player" loop>
@@ -230,14 +250,14 @@
     let targetNumber = 0;
     let placedItemsCount = 0;
 
-    let soundType = "고유어"; // 고유어 or 한자어
+    let soundType = "고유어"; 
     let soundEnabled = true;
 
     // 한국어/한자어 변환 매핑
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
-    // 🔊 오디오 라우팅 시스템
+    // 오디오 라우팅 시스템
     let currentAudio = null;
     function playSound(fileName) {
         if (currentAudio) currentAudio.pause();
@@ -258,13 +278,12 @@
         };
     }
 
-    // BGM 시작 (사용자의 첫 클릭/터치 시 재생)
     document.body.addEventListener('click', () => {
         const bgm = document.getElementById('bgm-player');
         if (bgm.paused) bgm.play().catch(e => console.log("BGM play error", e));
     }, { once: true });
 
-    // 🎮 게임 시작 관리
+    // 게임 시작 관리
     function startGame(gameName) {
         currentGame = gameName;
         document.getElementById('banner-frame').style.display = 'flex';
@@ -283,7 +302,7 @@
         }
     }
 
-    // 🧩 숫자 세기 놀이 구현
+    // 숫자 세기 놀이 구현
     function initCountingGame() {
         const availableItems = items.filter(i => !solvedItems['숫자 세기 놀이'].includes(i));
         if (availableItems.length === 0) {
@@ -308,7 +327,6 @@
             </div>
 
             <div id="drop-zone" onclick="placeItem()">
-                <!-- 클릭하면 아이템이 여기에 배치됩니다 -->
             </div>
 
             <div class="items-tray">
@@ -387,7 +405,7 @@
         }
     }
 
-    // 🧩 우측 나무 트레이 업데이트
+    // 우측 나무 트레이 업데이트
     function updateBanner() {
         const banner = document.getElementById('banner-frame');
         banner.innerHTML = '';
@@ -401,7 +419,7 @@
         });
     }
 
-    // 🧩 완료 화면
+    // 완료 화면
     function showCompletionScreen(gameName) {
         const gameArea = document.getElementById('game-area');
         gameArea.innerHTML = `

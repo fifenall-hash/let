@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        /* 기본 브라우저 여백 제거 및 세로 분할 레이아웃 */
+        /* 1. 기본 브라우저 여백 제거 및 세로 분할 레이아웃 */
         body {
             margin: 0;
             padding: 0;
@@ -17,7 +17,7 @@
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
 
-        /* 게임 화면이 위치할 상단 래퍼 영역 */
+        /* 2. 게임 화면이 위치할 상단 래퍼 영역 */
         #app-wrapper {
             flex: 1;
             display: flex;
@@ -28,19 +28,16 @@
             width: 100%;
         }
 
-        /* 16:9 메인 컨테이너 (컨테이너 쿼리 적용) */
+        /* 3. 16:9 메인 컨테이너 (컨테이너 쿼리 적용) */
         #app-container {
             container-type: inline-size;
             width: 100%;
             height: 100%;
-            /* 화면 너비와 (높이*16/9) 중 작은 값 적용 */
             max-width: min(100vw, calc(85vh * (16 / 9)));
-            /* 화면 높이와 (너비*9/16) 중 작은 값 적용 */
             max-height: min(85vh, calc(100vw * (9 / 16)));
             aspect-ratio: 16 / 9;
             background-color: #f5f5f5;
             
-            /* 3단 분할 그리드 레이아웃 고정 */
             display: grid;
             grid-template-columns: 22% 58% 20%;
             
@@ -51,7 +48,7 @@
             touch-action: manipulation;
         }
 
-        /* 모바일 하단 툴바 가림 방지 (안전 영역) */
+        /* 4. 모바일 하단 툴바 가림 방지 (안전 영역) */
         #bottom-safe-area {
             height: 15vh;
             min-height: 90px; 
@@ -60,7 +57,7 @@
         }
 
         /* ---------------------------------------------------
-           1. 좌측 메뉴 영역
+           [수정됨] 5. 좌측 메뉴 영역 (가로 모드 잘림 방지)
         --------------------------------------------------- */
         #menu-frame {
             width: 100%;
@@ -69,26 +66,28 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: space-evenly; /* 요소들을 세로로 균등하게 배치합니다. */
+            padding: 2cqh 0; /* 여백을 높이(cqh) 기준으로 설정합니다. */
             box-shadow: 0.2cqw 0 0.5cqw rgba(0,0,0,0.1);
             z-index: 10;
-            overflow: hidden;
+            overflow-y: auto; /* 극단적으로 화면이 작을 때 메뉴 영역만 스크롤 되도록 허용합니다. */
         }
 
         .menu-logo {
-            width: 80%;
-            margin: 4cqw 0;
+            width: 70%;
+            margin-bottom: 2cqh;
             object-fit: contain;
         }
 
         .menu-btn {
-            width: 80%;
-            padding: 1.5cqw;
-            margin: 1cqw 0;
-            font-size: 1.5cqw;
+            width: 85%;
+            padding: 2cqh; /* 버튼 내부 여백을 높이 기준으로 변경 */
+            margin: 0.5cqh 0; /* 버튼 간격을 높이 기준으로 변경 */
+            font-size: 3cqh; /* 글자 크기를 화면 높이에 반응하도록 변경 */
             font-weight: bold;
             background-color: #e0e0e0;
             border: none;
-            border-radius: 1cqw;
+            border-radius: 1.5cqh;
             cursor: pointer;
             transition: transform 0.1s, background-color 0.2s;
         }
@@ -103,7 +102,7 @@
         }
 
         /* ---------------------------------------------------
-           2. 중앙 인게임 영역
+           6. 중앙 인게임 영역 & 우측 트레이
         --------------------------------------------------- */
         #game-area {
             width: 100%;
@@ -118,9 +117,6 @@
             overflow: hidden;
         }
 
-        /* ---------------------------------------------------
-           3. 우측 배너(트레이) 영역
-        --------------------------------------------------- */
         #banner-area {
             width: 100%;
             height: 100%;
@@ -150,7 +146,7 @@
         }
 
         /* ---------------------------------------------------
-           내부 동적 요소 스타일 (cqw 단위 사용)
+           7. 게임 내부 동적 요소 스타일
         --------------------------------------------------- */
         .question-text {
             font-size: 2.5cqw;
@@ -279,7 +275,6 @@
     function playSound(fileName) {
         if (currentAudio) currentAudio.pause();
         
-        // 정규식을 사용해 파일명에 숫자가 포함되어 있으면 sounds_number 폴더로 매핑
         const isNumberSound = /^\d+/.test(fileName) || /\[고유어\]/.test(fileName);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
         
@@ -296,7 +291,6 @@
         };
     }
 
-    // 첫 터치 시 BGM 재생
     document.body.addEventListener('click', () => {
         const bgm = document.getElementById('bgm-player');
         if (bgm.paused) bgm.play().catch(e => console.log("BGM play error", e));
@@ -454,13 +448,12 @@
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
 
-        // 크기 변경 이벤트가 끝난 뒤 0.25초 후 화면 강제 갱신(Reflow)
         resizeTimer = setTimeout(() => {
             const appContainer = document.getElementById('app-container');
             if (appContainer) {
-                // 요소를 잠깐 숨겼다가 다시 나타나게 하여 브라우저가 크기를 다시 계산하도록 유도
+                // 강제 리플로우를 통해 이전 크기의 잔재를 지우고 새로운 크기로 화면을 갱신합니다.
                 appContainer.style.display = 'none';
-                void appContainer.offsetHeight; // 강제 계산 트리거
+                void appContainer.offsetHeight;
                 appContainer.style.display = 'grid';
                 console.log("레이아웃이 성공적으로 갱신되었습니다.");
             }

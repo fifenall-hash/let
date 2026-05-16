@@ -18,14 +18,14 @@
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
 
-        /* 2:1 비율을 유지하는 메인 앱 컨테이너 */
+        /* 1.8:1 비율을 유지하는 메인 앱 컨테이너 */
         #app-container {
             position: relative;
             width: 100vw;
             height: 100vh;
-            max-width: calc(100vh * 2);
-            max-height: calc(100vw / 2);
-            aspect-ratio: 2 / 1;
+            max-width: calc(100vh * 1.8);
+            max-height: calc(100vw / 1.8);
+            aspect-ratio: 1.8 / 1;
             background-color: #f5f5f5;
             display: flex;
             overflow: hidden;
@@ -235,18 +235,16 @@
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
-    // 🔊 오디오 라우팅 시스템 (핵심!)
-    // 파일명에 숫자가 포함되어 있으면 sounds_number, 아니면 sounds_basic에서 찾습니다.
+    // 🔊 오디오 라우팅 시스템
     let currentAudio = null;
     function playSound(fileName) {
         if (currentAudio) currentAudio.pause();
         
-        // 파일명이 숫자로 시작하거나 숫자를 포함하는 경우 (정규식 검사)
         const isNumberSound = /^\d+/.test(fileName) || /\[고유어\]/.test(fileName);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
         
         currentAudio = new Audio(folder + fileName);
-        currentAudio.play().catch(e => console.log("Audio play failed (maybe user didn't interact yet):", e));
+        currentAudio.play().catch(e => console.log("Audio play failed:", e));
         return currentAudio;
     }
 
@@ -264,7 +262,6 @@
         if (bgm.paused) bgm.play().catch(e => console.log("BGM play error", e));
     }, { once: true });
 
-
     // 🎮 게임 시작 관리
     function startGame(gameName) {
         currentGame = gameName;
@@ -274,16 +271,17 @@
         if (gameName === '숫자 세기 놀이') {
             initCountingGame();
         } else if (gameName === '더하기 놀이') {
-            initAdditionGame();
+            document.getElementById('game-area').innerHTML = `
+                <h1 style="color: #888;">더하기 놀이 업데이트 준비 중입니다!</h1>
+            `;
         } else {
-            // 다른 놀이의 경우 이곳에 추가 구현하시면 됩니다.
             document.getElementById('game-area').innerHTML = `
                 <h1 style="color: #888;">${gameName} 업데이트 준비 중입니다!</h1>
             `;
         }
     }
 
-    // 🧩 1. 숫자 세기 놀이 구현
+    // 🧩 숫자 세기 놀이 구현
     function initCountingGame() {
         const availableItems = items.filter(i => !solvedItems['숫자 세기 놀이'].includes(i));
         if (availableItems.length === 0) {
@@ -327,7 +325,6 @@
 
     function selectItem(itemName) {
         selectedItemForPlacement = itemName;
-        // 웹 브라우저 커서를 선택한 이미지로 변경
         document.getElementById('drop-zone').style.cursor = `url('images/${itemName}.png') 30 30, pointer`;
     }
 
@@ -339,7 +336,6 @@
         const img = document.createElement('img');
         img.src = `images/${selectedItemForPlacement}.png`;
         img.className = 'placed-item';
-        // 우클릭 시 삭제 기능
         img.oncontextmenu = (e) => { e.preventDefault(); removePlacedItem(img); };
         dropZone.appendChild(img);
 
@@ -366,7 +362,6 @@
 
         if (dropZoneItems.length !== targetNumber) isCorrect = false;
         
-        // 올바른 아이템을 선택했는지 확인
         for (let img of dropZoneItems) {
             if (!img.src.includes(targetItem)) {
                 isCorrect = false;
@@ -384,13 +379,13 @@
             document.querySelector('.question-text').innerText = "다시 해보자.";
             setTimeout(() => {
                 document.querySelector('.question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
-                document.getElementById('drop-zone').innerHTML = ''; // 오답 시 보드 초기화
+                document.getElementById('drop-zone').innerHTML = '';
                 placedItemsCount = 0;
             }, 2000);
         }
     }
 
-    // 🧩 2. 우측 나무 트레이(배너) 업데이트
+    // 🧩 우측 나무 트레이 업데이트
     function updateBanner() {
         const banner = document.getElementById('banner-frame');
         banner.innerHTML = '';
@@ -404,7 +399,7 @@
         });
     }
 
-    // 🧩 3. 완료 화면
+    // 🧩 완료 화면
     function showCompletionScreen(gameName) {
         const gameArea = document.getElementById('game-area');
         gameArea.innerHTML = `
@@ -413,14 +408,12 @@
         `;
         playSound('다했어고마워.wav');
 
-        // 왼쪽 메뉴 버튼 상태 변경
         const buttons = document.querySelectorAll('.menu-btn');
         buttons.forEach(btn => {
             if(btn.innerText.includes(gameName)) btn.classList.add('completed');
         });
     }
 
-    // 더하기 놀이 등 추가 로직은 동일한 패턴으로 `gameArea.innerHTML`을 교체하며 작성합니다.
 </script>
 
 </body>

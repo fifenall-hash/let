@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        /* CSS 변수 초기화 */
         :root {
             --k: 1px;
         }
@@ -32,7 +31,6 @@
             width: 100%;
         }
 
-        /* 16:9 메인 컨테이너 */
         #app-container {
             width: calc(var(--k) * 16);
             height: calc(var(--k) * 9);
@@ -48,14 +46,13 @@
             touch-action: manipulation;
         }
 
-        /* 하단 안전 영역 */
         #bottom-safe-area {
             width: 100%;
             background-color: #000;
         }
 
         /* ---------------------------------------------------
-           메뉴 프레임 및 버튼 영역
+           좌측 메뉴 영역
         --------------------------------------------------- */
         #menu-frame {
             background-color: white;
@@ -68,7 +65,8 @@
         }
 
         .menu-logo {
-            width: calc(var(--k) * 2.5);
+            /* 로고 크기 30% 확대 (2.5 -> 3.25) */
+            width: calc(var(--k) * 3.25);
             margin-bottom: calc(var(--k) * 0.8);
             object-fit: contain;
         }
@@ -77,8 +75,8 @@
             width: calc(var(--k) * 2.8);
             padding: calc(var(--k) * 0.3);
             margin: calc(var(--k) * 0.15) 0;
-            /* 메뉴 글자 크기 10% 축소 (0.35 -> 0.315) */
-            font-size: calc(var(--k) * 0.315); 
+            /* 메뉴 글자 크기 10% 축소 (0.315 -> 0.28) */
+            font-size: calc(var(--k) * 0.28); 
             font-weight: bold;
             background-color: #e0e0e0;
             border: none;
@@ -107,12 +105,11 @@
             margin-bottom: calc(var(--k) * 0.3);
             align-items: center;
             font-weight: bold;
-            /* 옵션 텍스트 크기 50% 축소 (0.3 -> 0.15) */
-            font-size: calc(var(--k) * 0.15); 
+            /* 옵션 텍스트 크기 10% 축소 (0.15 -> 0.135) */
+            font-size: calc(var(--k) * 0.135); 
         }
 
         .question-text {
-            /* 질문 텍스트 크기 50% 축소 (0.7 -> 0.35) */
             font-size: calc(var(--k) * 0.35); 
             font-weight: bold;
             margin-bottom: calc(var(--k) * 0.5);
@@ -130,9 +127,9 @@
         }
 
         .draggable-item {
-            /* 아이템 크기 50% 축소 (1.2 -> 0.6) */
-            width: calc(var(--k) * 0.6);
-            height: calc(var(--k) * 0.6);
+            /* 아이템 크기 10% 축소 (0.6 -> 0.54) */
+            width: calc(var(--k) * 0.54);
+            height: calc(var(--k) * 0.54);
             cursor: pointer;
         }
 
@@ -150,18 +147,19 @@
         }
 
         .placed-item {
-            /* 놓여진 아이템 크기 50% 축소 (1.2 -> 0.6) */
-            width: calc(var(--k) * 0.6);
-            height: calc(var(--k) * 0.6);
+            /* 놓여진 아이템 크기 10% 축소 (0.6 -> 0.54) */
+            width: calc(var(--k) * 0.54);
+            height: calc(var(--k) * 0.54);
         }
 
         .submit-btn {
-            padding: calc(var(--k) * 0.2) calc(var(--k) * 0.8);
-            font-size: calc(var(--k) * 0.5); 
+            /* 전달 버튼 크기 및 폰트 50% 축소 */
+            padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4);
+            font-size: calc(var(--k) * 0.25); 
             font-weight: bold;
             background-color: #FFD700;
             border: none;
-            border-radius: calc(var(--k) * 0.3);
+            border-radius: calc(var(--k) * 0.15);
             margin-top: calc(var(--k) * 0.5);
             cursor: pointer;
         }
@@ -188,9 +186,9 @@
         }
 
         .banner-item {
-            /* 획득한 아이템 크기 50% 축소 (1 -> 0.5) */
-            width: calc(var(--k) * 0.5);
-            height: calc(var(--k) * 0.5);
+            /* 획득한 아이템 크기 10% 축소 (0.5 -> 0.45) */
+            width: calc(var(--k) * 0.45);
+            height: calc(var(--k) * 0.45);
             margin: calc(var(--k) * 0.08);
             background-size: cover;
         }

@@ -7,7 +7,7 @@
     <style>
         /* CSS 변수 초기화 */
         :root {
-            --k: 1px; /* JS에서 이 값을 동적으로 계산하여 덮어씁니다. */
+            --k: 1px;
         }
 
         body {
@@ -19,7 +19,6 @@
             height: 100vh;
             overflow: hidden;
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-            /* 기본 폰트 사이즈도 k에 연동해 둡니다. */
             font-size: calc(var(--k) * 0.35); 
         }
 
@@ -39,7 +38,6 @@
             height: calc(var(--k) * 9);
             background-color: #f5f5f5;
             
-            /* 16k를 3.5k(메뉴), 9.5k(중앙), 3k(트레이)로 분할 */
             display: grid;
             grid-template-columns: calc(var(--k) * 3.5) calc(var(--k) * 9.5) calc(var(--k) * 3);
             
@@ -57,7 +55,7 @@
         }
 
         /* ---------------------------------------------------
-           메뉴 프레임 및 버튼 영역 (글자 크기 k 비례 적용)
+           메뉴 프레임 및 버튼 영역
         --------------------------------------------------- */
         #menu-frame {
             background-color: white;
@@ -79,7 +77,8 @@
             width: calc(var(--k) * 2.8);
             padding: calc(var(--k) * 0.3);
             margin: calc(var(--k) * 0.15) 0;
-            font-size: calc(var(--k) * 0.35); /* 버튼 글자 크기 동적 조절 */
+            /* 메뉴 글자 크기 10% 축소 (0.35 -> 0.315) */
+            font-size: calc(var(--k) * 0.315); 
             font-weight: bold;
             background-color: #e0e0e0;
             border: none;
@@ -90,7 +89,7 @@
         .menu-btn.completed { background-color: #A0E8AF; color: black; }
 
         /* ---------------------------------------------------
-           중앙 게임 영역 (글자 크기 k 비례 적용)
+           중앙 게임 영역
         --------------------------------------------------- */
         #game-area {
             display: flex;
@@ -102,19 +101,19 @@
             position: relative;
         }
 
-        /* 옵션 바 글자 크기 */
         .options-bar {
             display: flex;
             gap: calc(var(--k) * 0.3);
             margin-bottom: calc(var(--k) * 0.3);
             align-items: center;
             font-weight: bold;
-            font-size: calc(var(--k) * 0.3); /* 체크박스 등 글자 크기 동적 조절 */
+            /* 옵션 텍스트 크기 50% 축소 (0.3 -> 0.15) */
+            font-size: calc(var(--k) * 0.15); 
         }
 
-        /* 질문 텍스트 글자 크기 */
         .question-text {
-            font-size: calc(var(--k) * 0.7); /* 질문 글자 크기 동적 조절 */
+            /* 질문 텍스트 크기 50% 축소 (0.7 -> 0.35) */
+            font-size: calc(var(--k) * 0.35); 
             font-weight: bold;
             margin-bottom: calc(var(--k) * 0.5);
             text-align: center;
@@ -131,8 +130,9 @@
         }
 
         .draggable-item {
-            width: calc(var(--k) * 1.2);
-            height: calc(var(--k) * 1.2);
+            /* 아이템 크기 50% 축소 (1.2 -> 0.6) */
+            width: calc(var(--k) * 0.6);
+            height: calc(var(--k) * 0.6);
             cursor: pointer;
         }
 
@@ -150,14 +150,14 @@
         }
 
         .placed-item {
-            width: calc(var(--k) * 1.2);
-            height: calc(var(--k) * 1.2);
+            /* 놓여진 아이템 크기 50% 축소 (1.2 -> 0.6) */
+            width: calc(var(--k) * 0.6);
+            height: calc(var(--k) * 0.6);
         }
 
-        /* 하단 전달 버튼 글자 크기 */
         .submit-btn {
             padding: calc(var(--k) * 0.2) calc(var(--k) * 0.8);
-            font-size: calc(var(--k) * 0.5); /* 버튼 글자 크기 동적 조절 */
+            font-size: calc(var(--k) * 0.5); 
             font-weight: bold;
             background-color: #FFD700;
             border: none;
@@ -188,8 +188,9 @@
         }
 
         .banner-item {
-            width: calc(var(--k) * 1);
-            height: calc(var(--k) * 1);
+            /* 획득한 아이템 크기 50% 축소 (1 -> 0.5) */
+            width: calc(var(--k) * 0.5);
+            height: calc(var(--k) * 0.5);
             margin: calc(var(--k) * 0.08);
             background-size: cover;
         }
@@ -210,7 +211,6 @@
             </div>
 
             <div id="game-area">
-                <!-- 초기 로딩 텍스트 글자 크기도 k에 연동합니다 -->
                 <h1 style="color: #888; text-align: center; font-size: calc(var(--k) * 0.6);">왼쪽에서 메뉴를 선택하세요.</h1>
             </div>
             
@@ -233,38 +233,29 @@
     // ==========================================
     function calculateLayout() {
         const ua = navigator.userAgent;
-        // Windows 또는 Mobile 환경 감지
         const isWindowsOrMobile = /Windows|Mobile/i.test(ua);
         
         const safeAreaEl = document.getElementById('bottom-safe-area');
         let safeAreaHeight = 0;
         
-        // 환경에 따른 하단 안전바 높이 할당
         if (isWindowsOrMobile) {
             safeAreaEl.style.display = 'none';
         } else {
             safeAreaEl.style.display = 'block';
-            safeAreaHeight = window.innerHeight * 0.08; // 뷰포트 높이의 8%
+            safeAreaHeight = window.innerHeight * 0.08; 
             safeAreaEl.style.height = `${safeAreaHeight}px`;
         }
         
-        // 실제 사용 가능한 너비와 높이 산출
         const availableWidth = window.innerWidth;
         const availableHeight = window.innerHeight - safeAreaHeight;
         
-        // 가로 16, 세로 9를 벗어나지 않는 가장 큰 정수 k값 도출
         let k = Math.floor(Math.min(availableWidth / 16, availableHeight / 9));
-        
-        // 너무 작아져서 레이아웃이 붕괴되는 것을 방지 (최소 1px)
         k = Math.max(1, k);
         
-        // 계산된 k값을 HTML 최상단 요소의 CSS 변수로 주입
         document.documentElement.style.setProperty('--k', `${k}px`);
     }
 
-    // 창 크기 변경 시 재계산 이벤트 리스너 등록
     window.addEventListener('resize', calculateLayout);
-    // 진입 시 즉시 1회 계산
     calculateLayout();
 
     // ==========================================
@@ -309,7 +300,6 @@
         if (gameName === '숫자 세기 놀이') {
             initCountingGame();
         } else {
-            // 다른 게임 메뉴를 눌렀을 때 나오는 문구의 크기도 k에 연동합니다.
             document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
         }
     }
@@ -390,7 +380,6 @@
     }
 
     function showCompletionScreen(gameName) {
-        // 완료 화면의 글자 크기도 k에 연동되도록 수정했습니다.
         document.getElementById('game-area').innerHTML = `
             <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2);">다 했어. 고마워!</h1>
             <p style="font-size: calc(var(--k) * 0.6); color: blue; font-weight: bold; margin-top: 0;">🎉 ${gameName} 마스터! 🎉</p>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
+        /* CSS 변수 초기화 */
         :root {
             --k: 1px;
         }
@@ -31,6 +32,7 @@
             width: 100%;
         }
 
+        /* 16:9 메인 컨테이너 */
         #app-container {
             width: calc(var(--k) * 16);
             height: calc(var(--k) * 9);
@@ -65,17 +67,18 @@
         }
 
         .menu-logo {
-            /* 로고 크기 30% 확대 (2.5 -> 3.25) */
-            width: calc(var(--k) * 3.25);
-            margin-bottom: calc(var(--k) * 0.8);
+            /* 로고 크기 10% 확대 (3.25 -> 3.575) */
+            width: calc(var(--k) * 3.575);
+            /* 로고와 메뉴 사이 간격 50% 축소 (0.8 -> 0.4) */
+            margin-bottom: calc(var(--k) * 0.4);
             object-fit: contain;
         }
 
         .menu-btn {
             width: calc(var(--k) * 2.8);
-            padding: calc(var(--k) * 0.3);
+            /* 세로 패딩 10% 축소 (0.3 -> 0.27) / 가로는 0.3 유지 */
+            padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
             margin: calc(var(--k) * 0.15) 0;
-            /* 메뉴 글자 크기 10% 축소 (0.315 -> 0.28) */
             font-size: calc(var(--k) * 0.28); 
             font-weight: bold;
             background-color: #e0e0e0;
@@ -105,7 +108,6 @@
             margin-bottom: calc(var(--k) * 0.3);
             align-items: center;
             font-weight: bold;
-            /* 옵션 텍스트 크기 10% 축소 (0.15 -> 0.135) */
             font-size: calc(var(--k) * 0.135); 
         }
 
@@ -127,7 +129,6 @@
         }
 
         .draggable-item {
-            /* 아이템 크기 10% 축소 (0.6 -> 0.54) */
             width: calc(var(--k) * 0.54);
             height: calc(var(--k) * 0.54);
             cursor: pointer;
@@ -136,45 +137,46 @@
         #drop-zone {
             width: calc(var(--k) * 6);
             height: calc(var(--k) * 4);
-            border: calc(var(--k) * 0.05) dashed #ccc;
             border-radius: calc(var(--k) * 0.4);
             position: relative;
             display: flex;
             flex-wrap: wrap-reverse;
             align-content: flex-start;
-            padding: calc(var(--k) * 0.2);
+            padding: calc(var(--k) * 0.5);
             gap: calc(var(--k) * 0.2);
         }
 
         .placed-item {
-            /* 놓여진 아이템 크기 10% 축소 (0.6 -> 0.54) */
             width: calc(var(--k) * 0.54);
             height: calc(var(--k) * 0.54);
         }
 
         .submit-btn {
-            /* 전달 버튼 크기 및 폰트 50% 축소 */
             padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4);
             font-size: calc(var(--k) * 0.25); 
             font-weight: bold;
             background-color: #FFD700;
             border: none;
             border-radius: calc(var(--k) * 0.15);
-            margin-top: calc(var(--k) * 0.5);
+            /* 전달 버튼 간격 바짝 좁힘 (0.5 -> 0.1) */
+            margin-top: calc(var(--k) * 0.1);
             cursor: pointer;
         }
 
         /* ---------------------------------------------------
-           우측 배너 영역
+           우측 배너(트레이) 영역
         --------------------------------------------------- */
         #banner-area {
             padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
             box-sizing: border-box;
+            display: flex;
+            align-items: center; /* 트레이를 상하 중앙에 정렬합니다. */
         }
 
         #banner-frame {
             width: 100%;
-            height: 100%;
+            /* 트레이 세로 길이 30% 축소 (100% -> 70%) */
+            height: 70%;
             background-color: #D2B48C;
             border: calc(var(--k) * 0.1) solid #8B4513;
             border-radius: calc(var(--k) * 0.2);
@@ -186,9 +188,9 @@
         }
 
         .banner-item {
-            /* 획득한 아이템 크기 10% 축소 (0.5 -> 0.45) */
-            width: calc(var(--k) * 0.45);
-            height: calc(var(--k) * 0.45);
+            /* 획득한 물건 크기를 중앙 아이템과 완벽하게 동일하게 맞춤 (0.54) */
+            width: calc(var(--k) * 0.54);
+            height: calc(var(--k) * 0.54);
             margin: calc(var(--k) * 0.08);
             background-size: cover;
         }
@@ -310,6 +312,7 @@
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
 
+        // drop-zone 내부에 백그라운드 이미지로 '숫자세기.png'를 삽입하고 테두리를 제거했습니다.
         document.getElementById('game-area').innerHTML = `
             <div class="options-bar">
                 <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
@@ -317,7 +320,7 @@
                 <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
             </div>
             <div class="question-text" onclick="replayQuestion()">${targetItem} ${targetNumber}개 줄래?</div>
-            <div id="drop-zone" onclick="placeItem()"></div>
+            <div id="drop-zone" onclick="placeItem()" style="background-image: url('images/숫자세기.png'); background-size: contain; background-position: center; background-repeat: no-repeat; border: none;"></div>
             <div class="items-tray">
                 ${availableItems.map(item => `<img src="images/${item}.png" class="draggable-item" onclick="selectItem('${item}')" onerror="this.src=''">`).join('')}
             </div>

@@ -67,16 +67,13 @@
         }
 
         .menu-logo {
-            /* 로고 크기 10% 확대 (3.25 -> 3.575) */
             width: calc(var(--k) * 3.575);
-            /* 로고와 메뉴 사이 간격 50% 축소 (0.8 -> 0.4) */
             margin-bottom: calc(var(--k) * 0.4);
             object-fit: contain;
         }
 
         .menu-btn {
             width: calc(var(--k) * 2.8);
-            /* 세로 패딩 10% 축소 (0.3 -> 0.27) / 가로는 0.3 유지 */
             padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
             margin: calc(var(--k) * 0.15) 0;
             font-size: calc(var(--k) * 0.28); 
@@ -109,6 +106,22 @@
             align-items: center;
             font-weight: bold;
             font-size: calc(var(--k) * 0.135); 
+        }
+
+        /* 체크박스 및 라디오 버튼 레이아웃 및 크기 제어 추가 */
+        .options-bar label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .options-bar input[type="checkbox"],
+        .options-bar input[type="radio"] {
+            /* 텍스트 크기(0.135k)와 어울리도록 버튼 크기를 0.16k로 설정합니다. */
+            width: calc(var(--k) * 0.16);
+            height: calc(var(--k) * 0.16);
+            margin: 0 calc(var(--k) * 0.05) 0 0; /* 버튼과 글자 사이의 간격 */
+            cursor: pointer;
         }
 
         .question-text {
@@ -158,24 +171,22 @@
             background-color: #FFD700;
             border: none;
             border-radius: calc(var(--k) * 0.15);
-            /* 전달 버튼 간격 바짝 좁힘 (0.5 -> 0.1) */
             margin-top: calc(var(--k) * 0.1);
             cursor: pointer;
         }
 
         /* ---------------------------------------------------
-           우측 배너(트레이) 영역
+           우측 배너 영역
         --------------------------------------------------- */
         #banner-area {
             padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
             box-sizing: border-box;
             display: flex;
-            align-items: center; /* 트레이를 상하 중앙에 정렬합니다. */
+            align-items: center; 
         }
 
         #banner-frame {
             width: 100%;
-            /* 트레이 세로 길이 30% 축소 (100% -> 70%) */
             height: 70%;
             background-color: #D2B48C;
             border: calc(var(--k) * 0.1) solid #8B4513;
@@ -188,7 +199,6 @@
         }
 
         .banner-item {
-            /* 획득한 물건 크기를 중앙 아이템과 완벽하게 동일하게 맞춤 (0.54) */
             width: calc(var(--k) * 0.54);
             height: calc(var(--k) * 0.54);
             margin: calc(var(--k) * 0.08);
@@ -312,7 +322,6 @@
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
 
-        // drop-zone 내부에 백그라운드 이미지로 '숫자세기.png'를 삽입하고 테두리를 제거했습니다.
         document.getElementById('game-area').innerHTML = `
             <div class="options-bar">
                 <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>

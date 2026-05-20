@@ -67,9 +67,7 @@
         }
 
         .menu-logo {
-            /* 로고 크기 10% 확대 (3.575 -> 3.9325) */
             width: calc(var(--k) * 3.9325);
-            /* 로고와 메뉴 사이 간격 20% 축소 (0.4 -> 0.32) */
             margin-bottom: calc(var(--k) * 0.32);
             object-fit: contain;
         }
@@ -104,7 +102,6 @@
         .options-bar {
             display: flex;
             gap: calc(var(--k) * 0.3);
-            /* 세로 간격을 없애기 위해 마진을 0으로 변경 */
             margin-bottom: 0;
             align-items: center;
             font-weight: bold;
@@ -128,7 +125,6 @@
         .question-text {
             font-size: calc(var(--k) * 0.35); 
             font-weight: bold;
-            /* 세로 간격을 없애기 위해 마진을 0으로 변경 */
             margin-bottom: 0;
             text-align: center;
             cursor: pointer;
@@ -137,7 +133,6 @@
         .items-tray {
             display: flex;
             gap: calc(var(--k) * 0.2);
-            /* 세로 간격을 없애기 위해 마진을 0으로 변경 */
             margin-top: 0;
             background: rgba(255, 255, 255, 0.7);
             padding: calc(var(--k) * 0.2);
@@ -158,7 +153,6 @@
             display: flex;
             flex-wrap: wrap-reverse;
             align-content: flex-start;
-            /* 내부 여백을 유지하여 아이템이 너무 벽에 붙지 않게 합니다. */
             padding: calc(var(--k) * 0.5);
             gap: calc(var(--k) * 0.2);
         }
@@ -175,7 +169,6 @@
             background-color: #FFD700;
             border: none;
             border-radius: calc(var(--k) * 0.15);
-            /* 세로 간격을 없애기 위해 마진을 0으로 변경 */
             margin-top: 0;
             cursor: pointer;
         }
@@ -286,6 +279,7 @@
     let soundType = "고유어"; 
     let soundEnabled = true;
 
+    // 객체 사전은 화면에 문자를 표시할 일이 있을 때를 대비해 남겨둡니다.
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
@@ -358,7 +352,11 @@
         img.oncontextmenu = (e) => { e.preventDefault(); if(placedItemsCount > 0){ img.remove(); placedItemsCount--; } };
         document.getElementById('drop-zone').appendChild(img);
         
-        if (soundEnabled) playSound(`${soundType === "고유어" ? koreanNumbers[placedItemsCount] : sinoNumbers[placedItemsCount]}.wav`);
+        if (soundEnabled) {
+            // [수정된 부분] 문자열 배열을 참조하지 않고, 파일 이름 규칙에 맞추어 문자열을 직접 생성합니다.
+            let soundFileName = soundType === "고유어" ? `${placedItemsCount}[고유어].wav` : `${placedItemsCount}.wav`;
+            playSound(soundFileName);
+        }
     }
 
     function replayQuestion() { playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]); }

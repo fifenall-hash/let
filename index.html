@@ -279,14 +279,20 @@
     let soundType = "고유어"; 
     let soundEnabled = true;
 
-    // 객체 사전은 화면에 문자를 표시할 일이 있을 때를 대비해 남겨둡니다.
+    // 객체 사전
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
     let currentAudio = null;
+    
+    // 오디오 재생 및 라우팅 함수 (버그 수정 완료)
     function playSound(fileName) {
         if (currentAudio) currentAudio.pause();
-        const folder = (/^\d+/.test(fileName) || /\[고유어\]/.test(fileName)) ? 'sounds_number/' : 'sounds_basic/';
+        
+        // 정규 표현식을 수정하여 숫자.wav 또는 숫자[고유어].wav 구조만 sounds_number 폴더로 매핑합니다.
+        const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(fileName);
+        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
+        
         currentAudio = new Audio(folder + fileName);
         currentAudio.play().catch(e => console.log("Audio error:", e));
         return currentAudio;
@@ -353,7 +359,6 @@
         document.getElementById('drop-zone').appendChild(img);
         
         if (soundEnabled) {
-            // [수정된 부분] 문자열 배열을 참조하지 않고, 파일 이름 규칙에 맞추어 문자열을 직접 생성합니다.
             let soundFileName = soundType === "고유어" ? `${placedItemsCount}[고유어].wav` : `${placedItemsCount}.wav`;
             playSound(soundFileName);
         }

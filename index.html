@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        /* CSS 변수 초기화 */
+        /* ==========================================
+           1. 기본 설정 및 k 변수 초기화
+           ========================================== */
         :root {
-            --k: 1px;
+            --k: 1px; /* JS에서 화면 크기에 맞춰 동적으로 계산됩니다. */
         }
 
         body {
@@ -22,22 +24,24 @@
             font-size: calc(var(--k) * 0.35); 
         }
 
+        /* 메인 화면을 화면 상단이나 중앙에 배치하는 래퍼 */
         #app-wrapper {
             flex: 1;
             display: flex;
             justify-content: center;
-            align-items: flex-start; 
+            align-items: flex-start; /* JS에서 세로가 길면 center로 바뀝니다. */
             background-color: #333;
             overflow: hidden;
             width: 100%;
         }
 
-        /* 16:9 메인 컨테이너 */
+        /* 16:9 비율이 고정되는 진짜 메인 컨테이너 */
         #app-container {
             width: calc(var(--k) * 16);
             height: calc(var(--k) * 9);
             background-color: #f5f5f5;
             
+            /* 16k를 3.5k(메뉴), 9.5k(중앙), 3k(트레이)로 분할 */
             display: grid;
             grid-template-columns: calc(var(--k) * 3.5) calc(var(--k) * 9.5) calc(var(--k) * 3);
             
@@ -48,9 +52,9 @@
             touch-action: manipulation;
         }
 
-        /* ---------------------------------------------------
-           좌측 메뉴 영역
-        --------------------------------------------------- */
+        /* ==========================================
+           2. 좌측 메뉴 영역 디자인
+           ========================================== */
         #menu-frame {
             background-color: white;
             display: flex;
@@ -81,9 +85,9 @@
 
         .menu-btn.completed { background-color: #A0E8AF; color: black; }
 
-        /* ---------------------------------------------------
-           중앙 게임 영역
-        --------------------------------------------------- */
+        /* ==========================================
+           3. 중앙 게임 영역 디자인
+           ========================================== */
         #game-area {
             display: flex;
             flex-direction: column;
@@ -109,6 +113,7 @@
             cursor: pointer;
         }
 
+        /* 라디오 버튼과 체크박스 크기를 k에 비례하도록 고정 */
         .options-bar input[type="checkbox"],
         .options-bar input[type="radio"] {
             width: calc(var(--k) * 0.16);
@@ -125,6 +130,7 @@
             cursor: pointer;
         }
 
+        /* 아이템이 나열된 하단 쟁반 */
         .items-tray {
             display: flex;
             gap: calc(var(--k) * 0.2);
@@ -141,25 +147,27 @@
             transition: transform 0.1s;
         }
 
-        .draggable-item:active {
-            transform: scale(0.9);
-        }
+        .draggable-item:active { transform: scale(0.9); }
 
+        /* 중앙 보드판 (아이템이 놓이는 구역) */
         #drop-zone {
             width: calc(var(--k) * 6);
             height: calc(var(--k) * 4);
             border-radius: calc(var(--k) * 0.4);
-            /* 자식 요소의 절대 위치(absolute) 지정을 위한 기준점 설정 */
-            position: relative; 
-            margin: calc(var(--k) * 0.2) 0;
+            position: relative;
+            display: flex;
+            flex-wrap: wrap-reverse;
+            align-content: flex-start;
+            padding: calc(var(--k) * 0.5);
+            gap: calc(var(--k) * 0.2);
         }
 
+        /* 중앙 보드판 위에 놓여진 아이템 */
         .placed-item {
             width: calc(var(--k) * 0.54);
             height: calc(var(--k) * 0.54);
-            /* 자바스크립트에서 좌표를 계산하기 위해 absolute를 설정합니다. */
             position: absolute;
-            transition: all 0.2s ease-out; /* 놓일 때 살짝 부드럽게 나타나는 효과 */
+            transition: all 0.2s ease-out;
         }
 
         .submit-btn {
@@ -173,9 +181,9 @@
             cursor: pointer;
         }
 
-        /* ---------------------------------------------------
-           우측 배너 영역
-        --------------------------------------------------- */
+        /* ==========================================
+           4. 우측 배너(갈색 트레이) 영역 디자인
+           ========================================== */
         #banner-area {
             padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
             box-sizing: border-box;
@@ -184,8 +192,7 @@
         }
 
         #banner-frame {
-            /* 처음에는 보이지 않도록 수정했습니다. */
-            display: none;
+            display: none; /* 게임 시작 전에는 보이지 않음 */
             width: 100%;
             height: 70%;
             background-color: #D2B48C;
@@ -203,7 +210,6 @@
             margin: calc(var(--k) * 0.08);
             background-size: cover;
         }
-
     </style>
 </head>
 <body>
@@ -224,19 +230,19 @@
             </div>
             
             <div id="banner-area">
-                <!-- 트레이를 숨기기 위해 display를 JS로 제어합니다 -->
                 <div id="banner-frame"></div>
             </div>
         </div>
     </div>
 
+    <!-- 배경음악 요소 -->
     <audio id="bgm-player" loop>
         <source src="sounds_basic/bgm.wav" type="audio/wav">
     </audio>
 
 <script>
     // ==========================================
-    // k 배수 레이아웃 연산 엔진
+    // JS 1: k 배수 레이아웃 및 뷰포트 방향 감지
     // ==========================================
     function calculateLayout() {
         const availableWidth = window.innerWidth;
@@ -244,23 +250,26 @@
         
         const appWrapper = document.getElementById('app-wrapper');
         
+        // 세로가 더 길면 화면을 수직 중앙에 배치, 가로가 더 길면 상단에 밀착시킵니다.
         if (availableHeight > availableWidth) {
             appWrapper.style.alignItems = 'center';
         } else {
             appWrapper.style.alignItems = 'flex-start';
         }
         
+        // 16:9 비율이 화면을 벗어나지 않게 하는 가장 큰 정수 k값 계산
         let k = Math.floor(Math.min(availableWidth / 16, availableHeight / 9));
         k = Math.max(1, k); 
         
         document.documentElement.style.setProperty('--k', `${k}px`);
     }
 
+    // 창 크기나 방향이 바뀌면 레이아웃 다시 계산
     window.addEventListener('resize', calculateLayout);
     calculateLayout();
 
     // ==========================================
-    // 게임 상태 및 로직
+    // JS 2: 게임 상태 변수 초기화
     // ==========================================
     const items = ['단추', '딸기', '블록', '빗', '빵', '수박', '숟가락', '연필', '자동차', '칫솔'];
     const solvedItems = { '숫자 세기 놀이': [], '더하기 놀이': [], '빼기 놀이': [], '곱하기 놀이': [], '시계 보기 놀이': [] };
@@ -272,12 +281,19 @@
     let soundType = "고유어"; 
     let soundEnabled = true;
 
-    let currentAudio = new Audio();
+    const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
+    const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
+
+    // ==========================================
+    // JS 3: 모바일 최적화 오디오 시스템
+    // ==========================================
+    let currentAudio = new Audio(); // 모바일 정책 우회를 위한 단일 오디오 객체
 
     function playSound(fileName) {
         currentAudio.pause();
         currentAudio.onended = null; 
         
+        // 정규식을 사용해 숫자.wav 또는 숫자[고유어].wav 구조만 sounds_number 폴더로 매핑
         const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(fileName);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
         
@@ -287,23 +303,22 @@
 
     function playSoundSequence(fileNames) {
         if (fileNames.length === 0) return;
-        
         playSound(fileNames[0]);
-        
-        currentAudio.onended = () => {
-            playSoundSequence(fileNames.slice(1));
-        };
+        currentAudio.onended = () => { playSoundSequence(fileNames.slice(1)); };
     }
 
+    // 첫 사용자 인터랙션 시 배경음악 재생 권한 획득
     document.body.addEventListener('click', () => {
         const bgm = document.getElementById('bgm-player');
         if (bgm.paused) bgm.play().catch(e => console.log("BGM error", e));
     }, { once: true });
 
+    // ==========================================
+    // JS 4: 게임 메인 로직 (숫자 세기 놀이)
+    // ==========================================
     function startGame(gameName) {
         currentGame = gameName;
-        // 게임이 시작되면 갈색 트레이를 화면에 나타나게 합니다.
-        document.getElementById('banner-frame').style.display = 'flex';
+        document.getElementById('banner-frame').style.display = 'flex'; // 갈색 트레이 보이기
         updateBanner();
 
         if (gameName === '숫자 세기 놀이') {
@@ -321,7 +336,7 @@
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
 
-        // 드롭존에 onclick 이벤트 제거 (이제 물건을 누르면 바로 놓입니다)
+        // drop-zone의 배경 이미지(숫자세기.png)를 k배수로 완벽하게 고정합니다.
         document.getElementById('game-area').innerHTML = `
             <div class="options-bar">
                 <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
@@ -329,14 +344,16 @@
                 <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
             </div>
             <div class="question-text" onclick="replayQuestion()">${targetItem} ${targetNumber}개 줄래?</div>
-            <div id="drop-zone" style="background-image: url('images/숫자세기.png'); background-size: contain; background-position: center bottom; background-repeat: no-repeat; border: none;"></div>
+            
+            <div id="drop-zone" style="background-image: url('images/숫자세기.png'); background-size: calc(var(--k) * 6) calc(var(--k) * 4); background-position: center bottom; background-repeat: no-repeat; border: none;"></div>
+            
             <div class="items-tray">
                 ${availableItems.map(item => `<img src="images/${item}.png" class="draggable-item" onclick="placeItem('${item}')" onerror="this.src=''">`).join('')}
             </div>
             <button class="submit-btn" onclick="checkCountingAnswer()">전달</button>
         `;
 
-        // 마우스 오른쪽 버튼을 클릭하면 마지막으로 올린 물건을 빼는 기능 (가장 바깥 드롭존에 연결)
+        // 마우스 오른쪽 버튼 또는 길게 누르기로 마지막 물건 제거
         document.getElementById('drop-zone').oncontextmenu = (e) => {
             e.preventDefault();
             if(placedItemsCount > 0) {
@@ -350,7 +367,6 @@
     }
 
     function placeItem(itemName) {
-        // 이미 20개가 올려졌거나, 정답으로 제시된 물건이 아닌 다른 물건을 클릭한 경우 오류 방지
         if (placedItemsCount >= 20 || itemName !== targetItem) return;
         
         placedItemsCount++;
@@ -358,15 +374,11 @@
         img.src = `images/${itemName}.png`;
         img.className = 'placed-item';
         
-        // ----------------------------------------------------
-        // 아래에서 위로, 왼쪽에서 오른쪽으로 쌓기 위한 위치 연산
-        // ----------------------------------------------------
+        // 아이템을 아래에서 위로(0~4열), 왼쪽에서 오른쪽으로 쌓습니다.
         const index = placedItemsCount - 1; 
-        const col = Math.floor(index / 5); // 0, 1, 2, 3 (몇 번째 세로줄인지)
-        const row = index % 5;             // 0, 1, 2, 3, 4 (몇 번째 칸인지 - 0이 제일 아래)
+        const col = Math.floor(index / 5); 
+        const row = index % 5;             
 
-        // 왼쪽 여백(left)과 아래 여백(bottom)을 계산하여 설정합니다. 
-        // 배경 이미지의 왼쪽 아래부터 차곡차곡 쌓이도록 시작 지점을 조정했습니다.
         img.style.left = `calc(var(--k) * 1.5 + var(--k) * 0.75 * ${col})`;
         img.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row})`;
 
@@ -382,7 +394,6 @@
 
     function checkCountingAnswer() {
         const dropZoneItems = document.getElementById('drop-zone').children;
-        // 이제 엉뚱한 물건은 아예 놔지지 않으므로 개수만 확인하면 됩니다.
         let isCorrect = (dropZoneItems.length === targetNumber);
         
         if (isCorrect) {
@@ -421,6 +432,7 @@
         document.querySelectorAll('.menu-btn').forEach(btn => { if(btn.innerText.includes(gameName)) btn.classList.add('completed'); });
     }
 
+    // 모바일 뷰포트 크기 변경 시 강제 갱신
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);

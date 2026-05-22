@@ -5,110 +5,206 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
     <style>
-        :root { --k: 1px; }
+        /* CSS 변수 초기화 */
+        :root {
+            --k: 1px;
+        }
 
         body {
-            margin: 0; padding: 0;
+            margin: 0;
+            padding: 0;
             background-color: #333;
-            display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
             font-size: calc(var(--k) * 0.35); 
         }
 
         #app-wrapper {
-            flex: 1; display: flex;
-            justify-content: center; align-items: flex-start; 
-            background-color: #333; overflow: hidden; width: 100%;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            background-color: #333;
+            overflow: hidden;
+            width: 100%;
         }
 
+        /* 16:9 메인 컨테이너 */
         #app-container {
-            width: calc(var(--k) * 16); height: calc(var(--k) * 9);
+            width: calc(var(--k) * 16);
+            height: calc(var(--k) * 9);
             background-color: #f5f5f5;
+            
             display: grid;
             grid-template-columns: calc(var(--k) * 3.5) calc(var(--k) * 9.5) calc(var(--k) * 3);
-            overflow: hidden; box-sizing: border-box;
-            user-select: none; -webkit-user-select: none; touch-action: manipulation;
+            
+            overflow: hidden;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
 
+        #bottom-safe-area {
+            width: 100%;
+            background-color: #000;
+        }
+
+        /* ---------------------------------------------------
+           좌측 메뉴 영역
+        --------------------------------------------------- */
         #menu-frame {
-            background-color: white; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            box-shadow: calc(var(--k) * 0.1) 0 calc(var(--k) * 0.3) rgba(0,0,0,0.1); z-index: 10;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: calc(var(--k) * 0.1) 0 calc(var(--k) * 0.3) rgba(0,0,0,0.1);
+            z-index: 10;
         }
 
         .menu-logo {
-            width: calc(var(--k) * 3.9325); margin-bottom: calc(var(--k) * 0.32); object-fit: contain;
+            width: calc(var(--k) * 3.9325);
+            margin-bottom: calc(var(--k) * 0.32);
+            object-fit: contain;
         }
 
         .menu-btn {
-            width: calc(var(--k) * 2.8); padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
-            margin: calc(var(--k) * 0.15) 0; font-size: calc(var(--k) * 0.28); 
-            font-weight: bold; background-color: #e0e0e0; border: none;
-            border-radius: calc(var(--k) * 0.2); cursor: pointer;
+            width: calc(var(--k) * 2.8);
+            padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
+            margin: calc(var(--k) * 0.15) 0;
+            font-size: calc(var(--k) * 0.28); 
+            font-weight: bold;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: calc(var(--k) * 0.2);
+            cursor: pointer;
         }
 
         .menu-btn.completed { background-color: #A0E8AF; color: black; }
 
+        /* ---------------------------------------------------
+           중앙 게임 영역
+        --------------------------------------------------- */
         #game-area {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; padding: calc(var(--k) * 0.5); box-sizing: border-box; position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: calc(var(--k) * 0.5);
+            box-sizing: border-box;
+            position: relative;
         }
 
         .options-bar {
-            display: flex; gap: calc(var(--k) * 0.3); margin-bottom: 0;
-            align-items: center; font-weight: bold; font-size: calc(var(--k) * 0.135); 
+            display: flex;
+            gap: calc(var(--k) * 0.3);
+            margin-bottom: 0;
+            align-items: center;
+            font-weight: bold;
+            font-size: calc(var(--k) * 0.135); 
         }
 
-        .options-bar label { display: flex; align-items: center; cursor: pointer; }
-        .options-bar input[type="checkbox"], .options-bar input[type="radio"] {
-            width: calc(var(--k) * 0.16); height: calc(var(--k) * 0.16);
-            margin: 0 calc(var(--k) * 0.05) 0 0; cursor: pointer;
+        .options-bar label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .options-bar input[type="checkbox"],
+        .options-bar input[type="radio"] {
+            width: calc(var(--k) * 0.16);
+            height: calc(var(--k) * 0.16);
+            margin: 0 calc(var(--k) * 0.05) 0 0; 
+            cursor: pointer;
         }
 
         .question-text {
-            font-size: calc(var(--k) * 0.35); font-weight: bold;
-            margin-bottom: 0; text-align: center; cursor: pointer;
+            /* [수정됨] 0.35에서 50% 확대된 0.525 적용 */
+            font-size: calc(var(--k) * 0.525); 
+            font-weight: bold;
+            margin-bottom: 0;
+            text-align: center;
+            cursor: pointer;
         }
 
         .items-tray {
-            display: flex; gap: calc(var(--k) * 0.2); margin-top: 0;
-            background: rgba(255, 255, 255, 0.7); padding: calc(var(--k) * 0.2);
+            display: flex;
+            gap: calc(var(--k) * 0.2);
+            margin-top: 0;
+            background: rgba(255, 255, 255, 0.7);
+            padding: calc(var(--k) * 0.2);
             border-radius: calc(var(--k) * 0.3);
         }
 
-        .draggable-item { width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54); cursor: pointer; }
+        .draggable-item {
+            width: calc(var(--k) * 0.54);
+            height: calc(var(--k) * 0.54);
+            cursor: pointer;
+        }
 
         #drop-zone {
-            width: calc(var(--k) * 6); height: calc(var(--k) * 4); border-radius: calc(var(--k) * 0.4);
-            position: relative; display: flex; flex-wrap: wrap-reverse;
-            align-content: flex-start; padding: calc(var(--k) * 0.5); gap: calc(var(--k) * 0.2);
+            width: calc(var(--k) * 6);
+            height: calc(var(--k) * 4);
+            border-radius: calc(var(--k) * 0.4);
+            position: relative;
+            display: flex;
+            flex-wrap: wrap-reverse;
+            align-content: flex-start;
+            padding: calc(var(--k) * 0.5);
+            gap: calc(var(--k) * 0.2);
         }
 
-        .placed-item { width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54); }
+        .placed-item {
+            width: calc(var(--k) * 0.54);
+            height: calc(var(--k) * 0.54);
+        }
 
         .submit-btn {
-            padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4); font-size: calc(var(--k) * 0.25); 
-            font-weight: bold; background-color: #FFD700; border: none;
-            border-radius: calc(var(--k) * 0.15); margin-top: 0; cursor: pointer;
+            padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4);
+            /* [수정됨] 0.25에서 40% 확대된 0.35 적용 */
+            font-size: calc(var(--k) * 0.35); 
+            font-weight: bold;
+            background-color: #FFD700;
+            border: none;
+            border-radius: calc(var(--k) * 0.15);
+            margin-top: 0;
+            cursor: pointer;
         }
 
+        /* ---------------------------------------------------
+           우측 배너 영역
+        --------------------------------------------------- */
         #banner-area {
             padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
-            box-sizing: border-box; display: flex; align-items: center; 
+            box-sizing: border-box;
+            display: flex;
+            align-items: center; 
         }
 
         #banner-frame {
-            width: 100%; height: 70%; background-color: #D2B48C;
-            border: calc(var(--k) * 0.1) solid #8B4513; border-radius: calc(var(--k) * 0.2);
-            display: flex; flex-wrap: wrap; align-content: flex-start;
-            padding: calc(var(--k) * 0.2); box-sizing: border-box;
+            width: 100%;
+            height: 70%;
+            background-color: #D2B48C;
+            border: calc(var(--k) * 0.1) solid #8B4513;
+            border-radius: calc(var(--k) * 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: calc(var(--k) * 0.2);
+            box-sizing: border-box;
         }
 
         .banner-item {
-            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
-            margin: calc(var(--k) * 0.08); background-size: cover;
+            width: calc(var(--k) * 0.54);
+            height: calc(var(--k) * 0.54);
+            margin: calc(var(--k) * 0.08);
+            background-size: cover;
         }
+
     </style>
 </head>
 <body>
@@ -180,14 +276,11 @@
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
-    // ==========================================
-    // [솔루션 적용] 오디오 매핑 시스템 (모바일 정책 회피)
-    // ==========================================
-    let currentAudio = new Audio(); // 단 하나의 오디오 객체를 만들어 계속 재사용합니다.
+    let currentAudio = new Audio();
 
     function playSound(fileName) {
         currentAudio.pause();
-        currentAudio.onended = null; // 새로운 소리가 시작되면 예약된 연쇄 재생을 취소합니다.
+        currentAudio.onended = null; 
         
         const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(fileName);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
@@ -201,7 +294,6 @@
         
         playSound(fileNames[0]);
         
-        // 첫 번째 소리가 무사히 끝나면 다음 소리를 이어서 틀도록 예약합니다.
         currentAudio.onended = () => {
             playSoundSequence(fileNames.slice(1));
         };

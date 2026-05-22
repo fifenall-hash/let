@@ -25,8 +25,11 @@
         #app-wrapper {
             flex: 1;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; /* 가로 기준으로는 여전히 중앙에 둡니다. */
+            
+            /* [수정된 부분] 수직 정렬을 중앙(center)에서 상단(flex-start)으로 변경했습니다. */
+            align-items: flex-start; 
+            
             background-color: #333;
             overflow: hidden;
             width: 100%;
@@ -279,20 +282,13 @@
     let soundType = "고유어"; 
     let soundEnabled = true;
 
-    // 객체 사전
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
     let currentAudio = null;
-    
-    // 오디오 재생 및 라우팅 함수 (버그 수정 완료)
     function playSound(fileName) {
         if (currentAudio) currentAudio.pause();
-        
-        // 정규 표현식을 수정하여 숫자.wav 또는 숫자[고유어].wav 구조만 sounds_number 폴더로 매핑합니다.
-        const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(fileName);
-        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
-        
+        const folder = (/^\d+/.test(fileName) || /\[고유어\]/.test(fileName)) ? 'sounds_number/' : 'sounds_basic/';
         currentAudio = new Audio(folder + fileName);
         currentAudio.play().catch(e => console.log("Audio error:", e));
         return currentAudio;

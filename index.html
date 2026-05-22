@@ -48,11 +48,6 @@
             touch-action: manipulation;
         }
 
-        #bottom-safe-area {
-            width: 100%;
-            background-color: #000;
-        }
-
         /* ---------------------------------------------------
            좌측 메뉴 영역
         --------------------------------------------------- */
@@ -123,7 +118,6 @@
         }
 
         .question-text {
-            /* [수정됨] 0.35에서 50% 확대된 0.525 적용 */
             font-size: calc(var(--k) * 0.525); 
             font-weight: bold;
             margin-bottom: 0;
@@ -144,28 +138,32 @@
             width: calc(var(--k) * 0.54);
             height: calc(var(--k) * 0.54);
             cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .draggable-item:active {
+            transform: scale(0.9);
         }
 
         #drop-zone {
             width: calc(var(--k) * 6);
             height: calc(var(--k) * 4);
             border-radius: calc(var(--k) * 0.4);
-            position: relative;
-            display: flex;
-            flex-wrap: wrap-reverse;
-            align-content: flex-start;
-            padding: calc(var(--k) * 0.5);
-            gap: calc(var(--k) * 0.2);
+            /* 자식 요소의 절대 위치(absolute) 지정을 위한 기준점 설정 */
+            position: relative; 
+            margin: calc(var(--k) * 0.2) 0;
         }
 
         .placed-item {
             width: calc(var(--k) * 0.54);
             height: calc(var(--k) * 0.54);
+            /* 자바스크립트에서 좌표를 계산하기 위해 absolute를 설정합니다. */
+            position: absolute;
+            transition: all 0.2s ease-out; /* 놓일 때 살짝 부드럽게 나타나는 효과 */
         }
 
         .submit-btn {
             padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4);
-            /* [수정됨] 0.25에서 40% 확대된 0.35 적용 */
             font-size: calc(var(--k) * 0.35); 
             font-weight: bold;
             background-color: #FFD700;
@@ -186,12 +184,13 @@
         }
 
         #banner-frame {
+            /* 처음에는 보이지 않도록 수정했습니다. */
+            display: none;
             width: 100%;
             height: 70%;
             background-color: #D2B48C;
             border: calc(var(--k) * 0.1) solid #8B4513;
             border-radius: calc(var(--k) * 0.2);
-            display: flex;
             flex-wrap: wrap;
             align-content: flex-start;
             padding: calc(var(--k) * 0.2);
@@ -225,19 +224,19 @@
             </div>
             
             <div id="banner-area">
+                <!-- 트레이를 숨기기 위해 display를 JS로 제어합니다 -->
                 <div id="banner-frame"></div>
             </div>
         </div>
     </div>
 
-    <!-- 배경음악 -->
     <audio id="bgm-player" loop>
         <source src="sounds_basic/bgm.wav" type="audio/wav">
     </audio>
 
 <script>
     // ==========================================
-    // k 배수 레이아웃 연산 엔진 및 화면 방향 감지
+    // k 배수 레이아웃 연산 엔진
     // ==========================================
     function calculateLayout() {
         const availableWidth = window.innerWidth;
@@ -273,9 +272,6 @@
     let soundType = "고유어"; 
     let soundEnabled = true;
 
-    const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
-    const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
-
     let currentAudio = new Audio();
 
     function playSound(fileName) {
@@ -306,7 +302,10 @@
 
     function startGame(gameName) {
         currentGame = gameName;
+        // 게임이 시작되면 갈색 트레이를 화면에 나타나게 합니다.
+        document.getElementById('banner-frame').style.display = 'flex';
         updateBanner();
+
         if (gameName === '숫자 세기 놀이') {
             initCountingGame();
         } else {
@@ -322,6 +321,7 @@
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
 
+        // 드롭존에 onclick 이벤트 제거 (이제 물건을 누르면 바로 놓입니다)
         document.getElementById('game-area').innerHTML = `
             <div class="options-bar">
                 <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
@@ -329,28 +329,47 @@
                 <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
             </div>
             <div class="question-text" onclick="replayQuestion()">${targetItem} ${targetNumber}개 줄래?</div>
-            <div id="drop-zone" onclick="placeItem()" style="background-image: url('images/숫자세기.png'); background-size: contain; background-position: center; background-repeat: no-repeat; border: none;"></div>
+            <div id="drop-zone" style="background-image: url('images/숫자세기.png'); background-size: contain; background-position: center bottom; background-repeat: no-repeat; border: none;"></div>
             <div class="items-tray">
-                ${availableItems.map(item => `<img src="images/${item}.png" class="draggable-item" onclick="selectItem('${item}')" onerror="this.src=''">`).join('')}
+                ${availableItems.map(item => `<img src="images/${item}.png" class="draggable-item" onclick="placeItem('${item}')" onerror="this.src=''">`).join('')}
             </div>
             <button class="submit-btn" onclick="checkCountingAnswer()">전달</button>
         `;
+
+        // 마우스 오른쪽 버튼을 클릭하면 마지막으로 올린 물건을 빼는 기능 (가장 바깥 드롭존에 연결)
+        document.getElementById('drop-zone').oncontextmenu = (e) => {
+            e.preventDefault();
+            if(placedItemsCount > 0) {
+                const dropZone = document.getElementById('drop-zone');
+                dropZone.removeChild(dropZone.lastChild);
+                placedItemsCount--;
+            }
+        };
+
         playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]);
     }
 
-    let selectedItemForPlacement = null;
-    function selectItem(itemName) {
-        selectedItemForPlacement = itemName;
-        document.getElementById('drop-zone').style.cursor = `url('images/${itemName}.png') 30 30, pointer`;
-    }
-
-    function placeItem() {
-        if (!selectedItemForPlacement || placedItemsCount >= 20) return;
+    function placeItem(itemName) {
+        // 이미 20개가 올려졌거나, 정답으로 제시된 물건이 아닌 다른 물건을 클릭한 경우 오류 방지
+        if (placedItemsCount >= 20 || itemName !== targetItem) return;
+        
         placedItemsCount++;
         const img = document.createElement('img');
-        img.src = `images/${selectedItemForPlacement}.png`;
+        img.src = `images/${itemName}.png`;
         img.className = 'placed-item';
-        img.oncontextmenu = (e) => { e.preventDefault(); if(placedItemsCount > 0){ img.remove(); placedItemsCount--; } };
+        
+        // ----------------------------------------------------
+        // 아래에서 위로, 왼쪽에서 오른쪽으로 쌓기 위한 위치 연산
+        // ----------------------------------------------------
+        const index = placedItemsCount - 1; 
+        const col = Math.floor(index / 5); // 0, 1, 2, 3 (몇 번째 세로줄인지)
+        const row = index % 5;             // 0, 1, 2, 3, 4 (몇 번째 칸인지 - 0이 제일 아래)
+
+        // 왼쪽 여백(left)과 아래 여백(bottom)을 계산하여 설정합니다. 
+        // 배경 이미지의 왼쪽 아래부터 차곡차곡 쌓이도록 시작 지점을 조정했습니다.
+        img.style.left = `calc(var(--k) * 1.5 + var(--k) * 0.75 * ${col})`;
+        img.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row})`;
+
         document.getElementById('drop-zone').appendChild(img);
         
         if (soundEnabled) {
@@ -363,7 +382,8 @@
 
     function checkCountingAnswer() {
         const dropZoneItems = document.getElementById('drop-zone').children;
-        let isCorrect = dropZoneItems.length === targetNumber && Array.from(dropZoneItems).every(img => img.src.includes(targetItem));
+        // 이제 엉뚱한 물건은 아예 놔지지 않으므로 개수만 확인하면 됩니다.
+        let isCorrect = (dropZoneItems.length === targetNumber);
         
         if (isCorrect) {
             playSound('고마워.wav');

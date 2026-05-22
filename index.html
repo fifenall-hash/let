@@ -138,7 +138,7 @@
         }
 
         /* ==========================================
-           우측 배너 영역
+           우측 갈색 트레이 영역
            ========================================== */
         #banner-area {
             padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
@@ -146,7 +146,11 @@
         }
 
         #banner-frame {
-            display: none; width: 100%; height: 70%; background-color: #D2B48C;
+            display: none; 
+            width: 100%; 
+            /* [수정됨] 세로 5개 분량이 딱 알맞게 들어가도록 계산된 고정 높이 3.7k 부여 */
+            height: calc(var(--k) * 3.7); 
+            background-color: #D2B48C;
             border: calc(var(--k) * 0.1) solid #8B4513; border-radius: calc(var(--k) * 0.2);
             display: grid; grid-template-columns: repeat(2, 1fr); justify-items: center;
             align-content: flex-start; gap: calc(var(--k) * 0.1);
@@ -383,6 +387,9 @@
             const dropZone = document.getElementById('drop-zone');
             dropZone.style.backgroundImage = "url('images/숫자세기고마워.png')";
 
+            // [수정됨] 상단의 "a n개 줄래?" 텍스트를 "고마워!"로 칭찬 텍스트로 바꿉니다.
+            document.querySelector('.question-text').innerText = "고마워!";
+
             const countDisplay = document.getElementById('count-display');
             if(countDisplay) countDisplay.style.display = 'none';
             dropZone.querySelectorAll('.red-border').forEach(e => e.style.display = 'none');
@@ -413,10 +420,11 @@
         });
     }
 
-    // [수정됨] 숫자 세기 놀이 완료 시, 텍스트 대신 완료 이미지를 표시합니다.
     function showCompletionScreen(gameName) {
         if (gameName === '숫자 세기 놀이') {
+            // [수정됨] 완료 시 완료 이미지 바로 위에 텍스트를 추가했습니다.
             document.getElementById('game-area').innerHTML = `
+                <div class="question-text" style="margin-bottom: calc(var(--k) * 0.5);">다 했어. 고마워!</div>
                 <img src="images/숫자세기완료.png" style="width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;" alt="완료">
             `;
         } else {

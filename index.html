@@ -99,7 +99,6 @@
             border-radius: calc(var(--k) * 0.4); position: relative;
             display: flex; flex-wrap: wrap-reverse; align-content: flex-start;
             padding: calc(var(--k) * 0.5); gap: calc(var(--k) * 0.2);
-            /* 클릭 시 물건이 빠진다는 피드백을 주기 위해 커서를 포인터로 변경 */
             cursor: pointer; 
         }
 
@@ -107,7 +106,6 @@
             width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
             position: absolute; transition: all 0.2s ease-out;
             object-fit: contain;
-            /* 아이템 클릭 시 이벤트가 부모인 drop-zone으로 자연스럽게 넘어가도록 함 */
             pointer-events: none; 
         }
 
@@ -118,21 +116,19 @@
             pointer-events: none; box-sizing: border-box; z-index: 5;
         }
 
-        /* [새로운 기능] 개수를 보여주는 동동 떠다니는 숫자 라벨 */
         #count-display {
             position: absolute;
             font-size: calc(var(--k) * 0.45);
             font-weight: bold;
-            color: #ff3333; /* 눈에 띄는 빨간색 */
-            /* 배경과 겹쳐도 잘 보이도록 하얀색 외곽선 추가 */
+            color: #ff3333; 
             text-shadow: calc(var(--k)*0.03) calc(var(--k)*0.03) 0 #fff,
                          calc(var(--k)*-0.03) calc(var(--k)*-0.03) 0 #fff,
                          calc(var(--k)*0.03) calc(var(--k)*-0.03) 0 #fff,
                          calc(var(--k)*-0.03) calc(var(--k)*0.03) 0 #fff;
             z-index: 10;
             pointer-events: none;
-            transform: translateX(-50%); /* 정확히 정가운데 정렬하기 위한 트릭 */
-            transition: all 0.15s ease-out; /* 부드러운 위치 이동 */
+            transform: translateX(-50%); 
+            transition: all 0.15s ease-out; 
         }
 
         .submit-btn {
@@ -219,10 +215,9 @@
     let targetNumber = 0;
     let placedItemsCount = 0;
     
-    // [추가됨] 설정 상태를 저장할 변수들
     let soundType = "고유어"; 
     let soundEnabled = true;
-    let showNumberStatus = true; // '수 상태 보이기' 기본값 true
+    let showNumberStatus = true; 
 
     let currentAudio = new Audio();
 
@@ -266,7 +261,6 @@
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
 
-        // [수정됨] 상단 메뉴에 '수 상태 보이기' 체크박스를 추가했습니다.
         document.getElementById('game-area').innerHTML = `
             <div class="options-bar">
                 <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
@@ -282,7 +276,6 @@
             <button class="submit-btn" onclick="checkCountingAnswer()">전달</button>
         `;
 
-        // [추가됨] 왼쪽 클릭과 오른쪽 클릭 모두 물건을 빼도록 연결합니다.
         const dropZone = document.getElementById('drop-zone');
         dropZone.onclick = removeLastItem;
         dropZone.oncontextmenu = removeLastItem;
@@ -290,9 +283,8 @@
         playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]);
     }
 
-    // [추가됨] 물건을 빼는 공통 함수입니다.
     function removeLastItem(e) {
-        if(e) e.preventDefault(); // 오른쪽 마우스 메뉴 방지
+        if(e) e.preventDefault(); 
         
         const dropZone = document.getElementById('drop-zone');
         const itemsInZone = dropZone.querySelectorAll('.placed-item');
@@ -301,8 +293,6 @@
             const lastItem = itemsInZone[itemsInZone.length - 1];
             dropZone.removeChild(lastItem);
             placedItemsCount--;
-            
-            // 삭제 후 테두리와 숫자 상태도 최신으로 업데이트해 줍니다.
             updateRedBorders(); 
             updateCountDisplay();
         }
@@ -329,38 +319,30 @@
         }
     }
 
-    // [추가됨] 물건 위에 숫자를 띄워주는 함수입니다.
     function updateCountDisplay() {
         let countDisplay = document.getElementById('count-display');
         const dropZone = document.getElementById('drop-zone');
 
-        // 요소가 아직 없으면 만들어서 보드판에 붙여줍니다.
         if (!countDisplay) {
             countDisplay = document.createElement('div');
             countDisplay.id = 'count-display';
             dropZone.appendChild(countDisplay);
         }
 
-        // 물건이 0개이거나, 체크박스를 해제했다면 숨깁니다.
         if (!showNumberStatus || placedItemsCount === 0) {
             countDisplay.style.display = 'none';
             return;
         }
 
-        // 보이기 처리 및 숫자 텍스트 변경
         countDisplay.style.display = 'block';
         countDisplay.innerText = placedItemsCount;
 
-        // 방금 놓은 마지막 물건의 행/열을 계산합니다.
         const index = placedItemsCount - 1; 
         const col = Math.floor(index / 5); 
         const row = index % 5;             
 
-        // 마지막 물건이 위치한 곳의 정중앙 X좌표 계산 (아이템 너비의 절반인 0.27k를 더함)
         const baseLeft = `calc(50% - calc(var(--k) * 1.395) + calc(var(--k) * 0.75 * ${col}))`;
         countDisplay.style.left = `calc(${baseLeft} + calc(var(--k) * 0.27))`;
-        
-        // Y좌표 계산: 물건의 꼭대기보다 조금 더 위(0.55k)에 띄웁니다.
         countDisplay.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row} + calc(var(--k) * 0.55))`;
     }
 
@@ -381,7 +363,6 @@
 
         document.getElementById('drop-zone').appendChild(img);
         
-        // 아이템 추가 후 테두리와 숫자 상태 업데이트
         updateRedBorders();
         updateCountDisplay();
         
@@ -402,7 +383,6 @@
             const dropZone = document.getElementById('drop-zone');
             dropZone.style.backgroundImage = "url('images/숫자세기고마워.png')";
 
-            // 정답을 맞췄을 땐 방해되지 않도록 숫자 표시와 테두리를 숨깁니다.
             const countDisplay = document.getElementById('count-display');
             if(countDisplay) countDisplay.style.display = 'none';
             dropZone.querySelectorAll('.red-border').forEach(e => e.style.display = 'none');
@@ -415,7 +395,6 @@
             document.querySelector('.question-text').innerText = "다시 해보자.";
             setTimeout(() => {
                 document.querySelector('.question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
-                // 오답 시 보드를 초기화합니다.
                 const dropZone = document.getElementById('drop-zone');
                 dropZone.querySelectorAll('.placed-item, .red-border, #count-display').forEach(e => e.remove());
                 placedItemsCount = 0;
@@ -434,11 +413,19 @@
         });
     }
 
+    // [수정됨] 숫자 세기 놀이 완료 시, 텍스트 대신 완료 이미지를 표시합니다.
     function showCompletionScreen(gameName) {
-        document.getElementById('game-area').innerHTML = `
-            <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2);">다 했어. 고마워!</h1>
-            <p style="font-size: calc(var(--k) * 0.6); color: blue; font-weight: bold; margin-top: 0;">🎉 ${gameName} 마스터! 🎉</p>
-        `;
+        if (gameName === '숫자 세기 놀이') {
+            document.getElementById('game-area').innerHTML = `
+                <img src="images/숫자세기완료.png" style="width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;" alt="완료">
+            `;
+        } else {
+            document.getElementById('game-area').innerHTML = `
+                <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2);">다 했어. 고마워!</h1>
+                <p style="font-size: calc(var(--k) * 0.6); color: blue; font-weight: bold; margin-top: 0;">🎉 ${gameName} 마스터! 🎉</p>
+            `;
+        }
+        
         playSound('다했어고마워.wav');
         document.querySelectorAll('.menu-btn').forEach(btn => { if(btn.innerText.includes(gameName)) btn.classList.add('completed'); });
     }

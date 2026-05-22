@@ -6,210 +6,154 @@
     <title>Let's Number!</title>
     <style>
         /* ==========================================
-           1. 기본 설정 및 k 변수 초기화
+           기본 설정 및 k 변수 초기화
            ========================================== */
         :root {
-            --k: 1px; /* JS에서 화면 크기에 맞춰 동적으로 계산됩니다. */
+            --k: 1px;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #333;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; padding: 0;
+            background-color: #333; display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
             font-size: calc(var(--k) * 0.35); 
         }
 
-        /* 메인 화면을 화면 상단이나 중앙에 배치하는 래퍼 */
         #app-wrapper {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* JS에서 세로가 길면 center로 바뀝니다. */
-            background-color: #333;
-            overflow: hidden;
-            width: 100%;
+            flex: 1; display: flex; justify-content: center; align-items: flex-start; 
+            background-color: #333; overflow: hidden; width: 100%;
         }
 
-        /* 16:9 비율이 고정되는 진짜 메인 컨테이너 */
+        /* 메인 컨테이너 (그리드 재조정) */
         #app-container {
             width: calc(var(--k) * 16);
             height: calc(var(--k) * 9);
             background-color: #f5f5f5;
             
-            /* 16k를 3.5k(메뉴), 9.5k(중앙), 3k(트레이)로 분할 */
+            /* [수정됨] 우측 트레이를 3k에서 2.1k로 줄이고, 남은 0.9k를 중앙 영역에 더했습니다. */
             display: grid;
-            grid-template-columns: calc(var(--k) * 3.5) calc(var(--k) * 9.5) calc(var(--k) * 3);
+            grid-template-columns: calc(var(--k) * 3.5) calc(var(--k) * 10.4) calc(var(--k) * 2.1);
             
-            overflow: hidden;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation;
+            overflow: hidden; box-sizing: border-box;
+            user-select: none; -webkit-user-select: none; touch-action: manipulation;
         }
 
         /* ==========================================
-           2. 좌측 메뉴 영역 디자인
+           좌측 메뉴 영역
            ========================================== */
         #menu-frame {
-            background-color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            background-color: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
             box-shadow: calc(var(--k) * 0.1) 0 calc(var(--k) * 0.3) rgba(0,0,0,0.1);
             z-index: 10;
         }
 
         .menu-logo {
-            width: calc(var(--k) * 3.9325);
-            margin-bottom: calc(var(--k) * 0.32);
-            object-fit: contain;
+            width: calc(var(--k) * 3.9325); margin-bottom: calc(var(--k) * 0.32);
+            /* [수정됨] 원본 이미지 비율을 찌그러짐 없이 유지합니다. */
+            object-fit: contain; 
         }
 
         .menu-btn {
-            width: calc(var(--k) * 2.8);
-            padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
-            margin: calc(var(--k) * 0.15) 0;
-            font-size: calc(var(--k) * 0.28); 
-            font-weight: bold;
-            background-color: #e0e0e0;
-            border: none;
-            border-radius: calc(var(--k) * 0.2);
-            cursor: pointer;
+            width: calc(var(--k) * 2.8); padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
+            margin: calc(var(--k) * 0.15) 0; font-size: calc(var(--k) * 0.28); 
+            font-weight: bold; background-color: #e0e0e0; border: none;
+            border-radius: calc(var(--k) * 0.2); cursor: pointer;
         }
 
         .menu-btn.completed { background-color: #A0E8AF; color: black; }
 
         /* ==========================================
-           3. 중앙 게임 영역 디자인
+           중앙 게임 영역
            ========================================== */
         #game-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: calc(var(--k) * 0.5);
-            box-sizing: border-box;
-            position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: calc(var(--k) * 0.5); box-sizing: border-box; position: relative;
         }
 
         .options-bar {
-            display: flex;
-            gap: calc(var(--k) * 0.3);
-            margin-bottom: 0;
-            align-items: center;
-            font-weight: bold;
-            font-size: calc(var(--k) * 0.135); 
+            display: flex; gap: calc(var(--k) * 0.3); margin-bottom: 0;
+            align-items: center; font-weight: bold; font-size: calc(var(--k) * 0.135); 
         }
-
-        .options-bar label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        /* 라디오 버튼과 체크박스 크기를 k에 비례하도록 고정 */
-        .options-bar input[type="checkbox"],
-        .options-bar input[type="radio"] {
-            width: calc(var(--k) * 0.16);
-            height: calc(var(--k) * 0.16);
-            margin: 0 calc(var(--k) * 0.05) 0 0; 
-            cursor: pointer;
+        .options-bar label { display: flex; align-items: center; cursor: pointer; }
+        .options-bar input[type="checkbox"], .options-bar input[type="radio"] {
+            width: calc(var(--k) * 0.16); height: calc(var(--k) * 0.16);
+            margin: 0 calc(var(--k) * 0.05) 0 0; cursor: pointer;
         }
 
         .question-text {
-            font-size: calc(var(--k) * 0.525); 
-            font-weight: bold;
-            margin-bottom: 0;
-            text-align: center;
-            cursor: pointer;
+            font-size: calc(var(--k) * 0.525); font-weight: bold;
+            margin-bottom: 0; text-align: center; cursor: pointer;
         }
 
-        /* 아이템이 나열된 하단 쟁반 */
         .items-tray {
-            display: flex;
-            gap: calc(var(--k) * 0.2);
-            margin-top: 0;
-            background: rgba(255, 255, 255, 0.7);
-            padding: calc(var(--k) * 0.2);
-            border-radius: calc(var(--k) * 0.3);
+            display: flex; gap: calc(var(--k) * 0.2); margin-top: 0;
+            background: rgba(255, 255, 255, 0.7); padding: calc(var(--k) * 0.2); border-radius: calc(var(--k) * 0.3);
         }
 
         .draggable-item {
-            width: calc(var(--k) * 0.54);
-            height: calc(var(--k) * 0.54);
-            cursor: pointer;
-            transition: transform 0.1s;
+            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
+            cursor: pointer; transition: transform 0.1s;
+            /* [수정됨] 이미지 비율을 원본과 똑같이 유지합니다. */
+            object-fit: contain; 
         }
-
         .draggable-item:active { transform: scale(0.9); }
 
-        /* 중앙 보드판 (아이템이 놓이는 구역) */
         #drop-zone {
-            width: calc(var(--k) * 6);
-            height: calc(var(--k) * 4);
-            border-radius: calc(var(--k) * 0.4);
-            position: relative;
-            display: flex;
-            flex-wrap: wrap-reverse;
-            align-content: flex-start;
-            padding: calc(var(--k) * 0.5);
-            gap: calc(var(--k) * 0.2);
+            width: calc(var(--k) * 6); height: calc(var(--k) * 4);
+            border-radius: calc(var(--k) * 0.4); position: relative;
+            display: flex; flex-wrap: wrap-reverse; align-content: flex-start;
+            padding: calc(var(--k) * 0.5); gap: calc(var(--k) * 0.2);
         }
 
-        /* 중앙 보드판 위에 놓여진 아이템 */
         .placed-item {
-            width: calc(var(--k) * 0.54);
-            height: calc(var(--k) * 0.54);
+            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
+            position: absolute; transition: all 0.2s ease-out;
+            /* [수정됨] 보드 위에 놓인 이미지도 원본 비율 유지 */
+            object-fit: contain;
+        }
+
+        /* 10개 묶음 빨간 네모 테두리 속성 */
+        .red-border {
             position: absolute;
-            transition: all 0.2s ease-out;
+            width: calc(var(--k) * 3.74); /* 5칸을 감싸는 너비 */
+            height: calc(var(--k) * 1.39); /* 2줄을 감싸는 높이 */
+            border: calc(var(--k) * 0.05) solid red;
+            border-radius: calc(var(--k) * 0.1);
+            pointer-events: none; /* 클릭 방해를 막습니다 */
+            box-sizing: border-box;
+            z-index: 5;
         }
 
         .submit-btn {
-            padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4);
-            font-size: calc(var(--k) * 0.35); 
-            font-weight: bold;
-            background-color: #FFD700;
-            border: none;
-            border-radius: calc(var(--k) * 0.15);
-            margin-top: 0;
-            cursor: pointer;
+            padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4); font-size: calc(var(--k) * 0.35); 
+            font-weight: bold; background-color: #FFD700; border: none;
+            border-radius: calc(var(--k) * 0.15); margin-top: 0; cursor: pointer;
         }
 
         /* ==========================================
-           4. 우측 배너(갈색 트레이) 영역 디자인
+           우측 갈색 트레이 영역
            ========================================== */
         #banner-area {
             padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center; 
+            box-sizing: border-box; display: flex; align-items: center; 
         }
 
         #banner-frame {
-            display: none; /* 게임 시작 전에는 보이지 않음 */
-            width: 100%;
-            height: 70%;
-            background-color: #D2B48C;
-            border: calc(var(--k) * 0.1) solid #8B4513;
-            border-radius: calc(var(--k) * 0.2);
-            flex-wrap: wrap;
-            align-content: flex-start;
-            padding: calc(var(--k) * 0.2);
-            box-sizing: border-box;
+            display: none; width: 100%; height: 70%; background-color: #D2B48C;
+            border: calc(var(--k) * 0.1) solid #8B4513; border-radius: calc(var(--k) * 0.2);
+            flex-wrap: wrap; align-content: flex-start;
+            padding: calc(var(--k) * 0.2); box-sizing: border-box;
         }
 
         .banner-item {
-            width: calc(var(--k) * 0.54);
-            height: calc(var(--k) * 0.54);
-            margin: calc(var(--k) * 0.08);
-            background-size: cover;
+            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
+            margin: calc(var(--k) * 0.08); 
+            /* [수정됨] 배경 이미지가 원본 비율을 훼손하지 않게(contain) 설정 */
+            background-size: contain; background-repeat: no-repeat; background-position: center;
         }
+
     </style>
 </head>
 <body>
@@ -235,41 +179,36 @@
         </div>
     </div>
 
-    <!-- 배경음악 요소 -->
+    <!-- 배경음악 -->
     <audio id="bgm-player" loop>
         <source src="sounds_basic/bgm.wav" type="audio/wav">
     </audio>
 
 <script>
     // ==========================================
-    // JS 1: k 배수 레이아웃 및 뷰포트 방향 감지
+    // k 배수 레이아웃 연산 엔진 및 화면 방향 감지
     // ==========================================
     function calculateLayout() {
         const availableWidth = window.innerWidth;
         const availableHeight = window.innerHeight;
-        
         const appWrapper = document.getElementById('app-wrapper');
         
-        // 세로가 더 길면 화면을 수직 중앙에 배치, 가로가 더 길면 상단에 밀착시킵니다.
         if (availableHeight > availableWidth) {
             appWrapper.style.alignItems = 'center';
         } else {
             appWrapper.style.alignItems = 'flex-start';
         }
         
-        // 16:9 비율이 화면을 벗어나지 않게 하는 가장 큰 정수 k값 계산
         let k = Math.floor(Math.min(availableWidth / 16, availableHeight / 9));
         k = Math.max(1, k); 
-        
         document.documentElement.style.setProperty('--k', `${k}px`);
     }
 
-    // 창 크기나 방향이 바뀌면 레이아웃 다시 계산
     window.addEventListener('resize', calculateLayout);
     calculateLayout();
 
     // ==========================================
-    // JS 2: 게임 상태 변수 초기화
+    // 게임 상태 및 로직
     // ==========================================
     const items = ['단추', '딸기', '블록', '빗', '빵', '수박', '숟가락', '연필', '자동차', '칫솔'];
     const solvedItems = { '숫자 세기 놀이': [], '더하기 놀이': [], '빼기 놀이': [], '곱하기 놀이': [], '시계 보기 놀이': [] };
@@ -284,19 +223,13 @@
     const koreanNumbers = {1: "하나", 2: "둘", 3: "셋", 4: "넷", 5: "다섯", 6: "여섯", 7: "일곱", 8: "여덟", 9: "아홉", 10: "열", 11: "열하나", 12: "열둘", 13: "열셋", 14: "열넷", 15: "열다섯", 16: "열여섯", 17: "열일곱", 18: "열여덟", 19: "열아홉", 20: "스물"};
     const sinoNumbers = {1: "일", 2: "이", 3: "삼", 4: "사", 5: "오", 6: "육", 7: "칠", 8: "팔", 9: "구", 10: "십", 11: "십일", 12: "십이", 13: "십삼", 14: "십사", 15: "십오", 16: "십육", 17: "십칠", 18: "십팔", 19: "십구", 20: "이십"};
 
-    // ==========================================
-    // JS 3: 모바일 최적화 오디오 시스템
-    // ==========================================
-    let currentAudio = new Audio(); // 모바일 정책 우회를 위한 단일 오디오 객체
+    let currentAudio = new Audio();
 
     function playSound(fileName) {
         currentAudio.pause();
         currentAudio.onended = null; 
-        
-        // 정규식을 사용해 숫자.wav 또는 숫자[고유어].wav 구조만 sounds_number 폴더로 매핑
         const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(fileName);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
-        
         currentAudio.src = folder + fileName;
         currentAudio.play().catch(e => console.log("Audio error:", e));
     }
@@ -307,18 +240,14 @@
         currentAudio.onended = () => { playSoundSequence(fileNames.slice(1)); };
     }
 
-    // 첫 사용자 인터랙션 시 배경음악 재생 권한 획득
     document.body.addEventListener('click', () => {
         const bgm = document.getElementById('bgm-player');
         if (bgm.paused) bgm.play().catch(e => console.log("BGM error", e));
     }, { once: true });
 
-    // ==========================================
-    // JS 4: 게임 메인 로직 (숫자 세기 놀이)
-    // ==========================================
     function startGame(gameName) {
         currentGame = gameName;
-        document.getElementById('banner-frame').style.display = 'flex'; // 갈색 트레이 보이기
+        document.getElementById('banner-frame').style.display = 'flex';
         updateBanner();
 
         if (gameName === '숫자 세기 놀이') {
@@ -336,7 +265,6 @@
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
 
-        // drop-zone의 배경 이미지(숫자세기.png)를 k배수로 완벽하게 고정합니다.
         document.getElementById('game-area').innerHTML = `
             <div class="options-bar">
                 <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
@@ -344,26 +272,54 @@
                 <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
             </div>
             <div class="question-text" onclick="replayQuestion()">${targetItem} ${targetNumber}개 줄래?</div>
-            
             <div id="drop-zone" style="background-image: url('images/숫자세기.png'); background-size: calc(var(--k) * 6) calc(var(--k) * 4); background-position: center bottom; background-repeat: no-repeat; border: none;"></div>
-            
             <div class="items-tray">
                 ${availableItems.map(item => `<img src="images/${item}.png" class="draggable-item" onclick="placeItem('${item}')" onerror="this.src=''">`).join('')}
             </div>
             <button class="submit-btn" onclick="checkCountingAnswer()">전달</button>
         `;
 
-        // 마우스 오른쪽 버튼 또는 길게 누르기로 마지막 물건 제거
+        // 마우스 우클릭으로 아이템 제거 시 테두리도 함께 업데이트
         document.getElementById('drop-zone').oncontextmenu = (e) => {
             e.preventDefault();
-            if(placedItemsCount > 0) {
-                const dropZone = document.getElementById('drop-zone');
-                dropZone.removeChild(dropZone.lastChild);
+            // 마지막 요소가 물건 이미지(img)일 때만 삭제합니다. (테두리 삭제 방지)
+            const dropZone = document.getElementById('drop-zone');
+            const itemsInZone = dropZone.querySelectorAll('.placed-item');
+            
+            if(itemsInZone.length > 0) {
+                const lastItem = itemsInZone[itemsInZone.length - 1];
+                dropZone.removeChild(lastItem);
                 placedItemsCount--;
+                updateRedBorders(); // 테두리 갱신
             }
         };
 
         playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]);
+    }
+
+    // 10단위 빨간색 네모 테두리 그리기 엔진
+    function updateRedBorders() {
+        const dropZone = document.getElementById('drop-zone');
+        // 먼저 그려져 있던 모든 테두리를 지웁니다.
+        dropZone.querySelectorAll('.red-border').forEach(e => e.remove());
+
+        // 10개 이상 쌓였을 때 1~10번 아이템을 감싸는 첫 번째 테두리 생성
+        if (placedItemsCount >= 10) {
+            const border1 = document.createElement('div');
+            border1.className = 'red-border';
+            border1.style.left = 'calc(var(--k) * 1.4)';
+            border1.style.bottom = 'calc(var(--k) * 0.3)';
+            dropZone.appendChild(border1);
+        }
+        
+        // 20개가 쌓였을 때 11~20번 아이템을 감싸는 두 번째 테두리 생성
+        if (placedItemsCount >= 20) {
+            const border2 = document.createElement('div');
+            border2.className = 'red-border';
+            border2.style.left = 'calc(var(--k) * 1.4)';
+            border2.style.bottom = 'calc(var(--k) * 1.6)';
+            dropZone.appendChild(border2);
+        }
     }
 
     function placeItem(itemName) {
@@ -374,7 +330,6 @@
         img.src = `images/${itemName}.png`;
         img.className = 'placed-item';
         
-        // 아이템을 아래에서 위로(0~4열), 왼쪽에서 오른쪽으로 쌓습니다.
         const index = placedItemsCount - 1; 
         const col = Math.floor(index / 5); 
         const row = index % 5;             
@@ -383,6 +338,9 @@
         img.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row})`;
 
         document.getElementById('drop-zone').appendChild(img);
+        
+        // 아이템이 추가될 때 테두리 업데이트
+        updateRedBorders();
         
         if (soundEnabled) {
             let soundFileName = soundType === "고유어" ? `${placedItemsCount}[고유어].wav` : `${placedItemsCount}.wav`;
@@ -393,20 +351,29 @@
     function replayQuestion() { playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]); }
 
     function checkCountingAnswer() {
-        const dropZoneItems = document.getElementById('drop-zone').children;
+        const dropZoneItems = document.querySelectorAll('.placed-item'); // 테두리 div는 제외하고 계산
         let isCorrect = (dropZoneItems.length === targetNumber);
         
         if (isCorrect) {
             playSound('고마워.wav');
+            
+            // [수정됨] 정답일 경우 배경 이미지를 '숫자세기고마워.png'로 임시 변경합니다.
+            const dropZone = document.getElementById('drop-zone');
+            dropZone.style.backgroundImage = "url('images/숫자세기고마워.png')";
+
             solvedItems['숫자 세기 놀이'].push(targetItem);
             updateBanner();
+            
+            // 2초 후 initCountingGame()이 불리며 배경 이미지는 원래대로 자연스럽게 초기화됩니다.
             setTimeout(initCountingGame, 2000);
         } else {
             playSound('다시해보자.wav');
             document.querySelector('.question-text').innerText = "다시 해보자.";
             setTimeout(() => {
                 document.querySelector('.question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
-                document.getElementById('drop-zone').innerHTML = '';
+                // 오답일 경우에만 아이템과 테두리를 리셋합니다.
+                const dropZone = document.getElementById('drop-zone');
+                dropZone.innerHTML = ''; 
                 placedItemsCount = 0;
             }, 2000);
         }
@@ -432,19 +399,6 @@
         document.querySelectorAll('.menu-btn').forEach(btn => { if(btn.innerText.includes(gameName)) btn.classList.add('completed'); });
     }
 
-    // 모바일 뷰포트 크기 변경 시 강제 갱신
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            const appContainer = document.getElementById('app-container');
-            if (appContainer) {
-                appContainer.style.display = 'none';
-                void appContainer.offsetHeight;
-                appContainer.style.display = 'grid';
-            }
-        }, 250);
-    });
 </script>
 
 </body>

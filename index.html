@@ -26,7 +26,8 @@
             flex: 1;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* 상단에 바짝 붙이도록 유지합니다. */
+            /* 초기값은 상단 밀착이지만, JS에서 기기 방향에 따라 동적으로 변경합니다. */
+            align-items: flex-start; 
             background-color: #333;
             overflow: hidden;
             width: 100%;
@@ -230,15 +231,24 @@
 
 <script>
     // ==========================================
-    // [수정됨] k 배수 레이아웃 연산 엔진 (단순화)
+    // k 배수 레이아웃 연산 엔진 및 화면 방향 감지
     // ==========================================
     function calculateLayout() {
-        // 하단 안전 구역을 제거하고 뷰포트 전체 높이를 사용합니다.
         const availableWidth = window.innerWidth;
         const availableHeight = window.innerHeight;
         
+        const appWrapper = document.getElementById('app-wrapper');
+        
+        // 세로 길이가 더 긴 경우(Portrait) 수직 중앙 정렬, 가로가 긴 경우(Landscape) 상단 밀착
+        if (availableHeight > availableWidth) {
+            appWrapper.style.alignItems = 'center';
+        } else {
+            appWrapper.style.alignItems = 'flex-start';
+        }
+        
+        // k값 도출 (소수점 버림)
         let k = Math.floor(Math.min(availableWidth / 16, availableHeight / 9));
-        k = Math.max(1, k);
+        k = Math.max(1, k); // 최소 1px 보장
         
         document.documentElement.style.setProperty('--k', `${k}px`);
     }
@@ -388,7 +398,6 @@
                 appContainer.style.display = 'none';
                 void appContainer.offsetHeight;
                 appContainer.style.display = 'grid';
-                console.log("레이아웃이 성공적으로 갱신되었습니다.");
             }
         }, 250);
     });

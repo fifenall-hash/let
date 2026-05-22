@@ -25,11 +25,8 @@
         #app-wrapper {
             flex: 1;
             display: flex;
-            justify-content: center; /* 가로 기준으로는 여전히 중앙에 둡니다. */
-            
-            /* [수정된 부분] 수직 정렬을 중앙(center)에서 상단(flex-start)으로 변경했습니다. */
-            align-items: flex-start; 
-            
+            justify-content: center;
+            align-items: flex-start; /* 상단에 바짝 붙이도록 유지합니다. */
             background-color: #333;
             overflow: hidden;
             width: 100%;
@@ -49,11 +46,6 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-        }
-
-        #bottom-safe-area {
-            width: 100%;
-            background-color: #000;
         }
 
         /* ---------------------------------------------------
@@ -231,34 +223,19 @@
         </div>
     </div>
 
-    <!-- 동적으로 크기가 조정될 안전 영역 -->
-    <div id="bottom-safe-area"></div>
-
+    <!-- 배경음악 -->
     <audio id="bgm-player" loop>
         <source src="sounds_basic/bgm.wav" type="audio/wav">
     </audio>
 
 <script>
     // ==========================================
-    // k 배수 레이아웃 연산 엔진
+    // [수정됨] k 배수 레이아웃 연산 엔진 (단순화)
     // ==========================================
     function calculateLayout() {
-        const ua = navigator.userAgent;
-        const isWindowsOrMobile = /Windows|Mobile/i.test(ua);
-        
-        const safeAreaEl = document.getElementById('bottom-safe-area');
-        let safeAreaHeight = 0;
-        
-        if (isWindowsOrMobile) {
-            safeAreaEl.style.display = 'none';
-        } else {
-            safeAreaEl.style.display = 'block';
-            safeAreaHeight = window.innerHeight * 0.08; 
-            safeAreaEl.style.height = `${safeAreaHeight}px`;
-        }
-        
+        // 하단 안전 구역을 제거하고 뷰포트 전체 높이를 사용합니다.
         const availableWidth = window.innerWidth;
-        const availableHeight = window.innerHeight - safeAreaHeight;
+        const availableHeight = window.innerHeight;
         
         let k = Math.floor(Math.min(availableWidth / 16, availableHeight / 9));
         k = Math.max(1, k);
@@ -401,6 +378,20 @@
         playSound('다했어고마워.wav');
         document.querySelectorAll('.menu-btn').forEach(btn => { if(btn.innerText.includes(gameName)) btn.classList.add('completed'); });
     }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            const appContainer = document.getElementById('app-container');
+            if (appContainer) {
+                appContainer.style.display = 'none';
+                void appContainer.offsetHeight;
+                appContainer.style.display = 'grid';
+                console.log("레이아웃이 성공적으로 갱신되었습니다.");
+            }
+        }, 250);
+    });
 </script>
 
 </body>

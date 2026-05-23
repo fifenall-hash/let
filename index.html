@@ -510,11 +510,11 @@
                 
                 <!-- 캐릭터 영역 -->
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <!-- 1. 대사 글자 크기 10% 확대 (0.21 -> 0.231) 및 볼드체 확인 -->
                     <div id="add-speech" style="font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         모두 더해서<br>몇 개인지<br>알려줄래?
                     </div>
-                    <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="height: calc(var(--k) * 3); width: auto; object-fit: contain; margin-left: calc(var(--k) * -0.1);">
+                    <!-- [수정됨] 위치 고정을 위해 width를 고정하고 object-position을 추가했습니다. -->
+                    <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
                 
                 <!-- 보드 영역 -->
@@ -522,19 +522,19 @@
                     
                     <!-- 상단 안내 및 힌트 바 -->
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="add-instruction" style="font-size: calc(var(--k) * 0.24); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
+                        <!-- [수정됨] 0.24 -> 0.216 (10% 축소) -->
+                        <div id="add-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
+                        <!-- [수정됨] 0.25 -> 0.16 (힌트보기 크기와 동일하게 수정) -->
                         ${isHardMode ? 
-                            `<div style="font-size: calc(var(--k) * 0.25); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
-                            // 2. 힌트 보기 글자 크기
+                            `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
                             `<button id="hint-btn" onclick="showAdditionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
                         }
                     </div>
                     
                     <!-- 캔버스(아이템 영역) -->
                     <div id="add-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <!-- 3. 더하기 기호(+) 40% 축소 (1.5 -> 0.9) -->
                         <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">+</div>
                     </div>
                     
@@ -547,7 +547,7 @@
                 </div>
             </div>
         `;
-
+        
         const canvas = document.getElementById('add-canvas');
         
         const createItem = (arr) => {
@@ -800,7 +800,7 @@
                 #sub-input::-webkit-outer-spin-button,
                 #sub-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
                 #sub-input { -moz-appearance: textfield; }
-                .inverted-item { filter: invert(1); } /* 파이썬의 ImageOps.invert 효과 */
+                .inverted-item { filter: invert(1); }
             </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
                 
@@ -809,7 +809,8 @@
                     <div id="sub-speech" style="font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         빼고 나면<br>몇 개인지<br>알려줄래?
                     </div>
-                    <img id="sub-char" src="images/셈놀이.png" onerror="this.src=''" style="height: calc(var(--k) * 3); width: auto; object-fit: contain; margin-left: calc(var(--k) * -0.1);">
+                    <!-- [수정됨] 위치 고정을 위해 width를 고정하고 object-position을 추가했습니다. -->
+                    <img id="sub-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
                 
                 <!-- 보드 영역 -->
@@ -817,11 +818,13 @@
                     
                     <!-- 상단 안내 및 힌트 바 -->
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="sub-instruction" style="font-size: calc(var(--k) * 0.24); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
+                        <!-- [수정됨] 0.24 -> 0.216 (10% 축소) -->
+                        <div id="sub-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
+                        <!-- [수정됨] 0.25 -> 0.16 (힌트보기 크기와 동일하게 수정) -->
                         ${isHardMode ? 
-                            `<div style="font-size: calc(var(--k) * 0.25); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
+                            `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
                             `<button id="sub-hint-btn" onclick="showSubtractionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
                         }
                     </div>
@@ -935,34 +938,31 @@
         isAnimating = true;
         evaluateSubHintButtonState();
 
-        // ---------------------------------------------------------
-        // [수정됨] 파이썬 로직 반영: 동선 크로스 방지 알고리즘 적용
-        // ---------------------------------------------------------
+        // =====================================================================
+        // [수정됨] 애니메이션 시작 즉시 오른쪽 10개 묶음 빨간 테두리 제거
+        // (왼쪽 개수는 그대로 유지하고, 오른쪽 개수(previewRight)를 0으로 강제 지정)
+        updateSubBorders(subLeftItems.length, 0); 
+        // =====================================================================
+
         const numToCancel = subRightItems.length;
         const remain = subLeftItems.length - numToCancel;
         
-        // 인덱스를 5로 나누어 현재 열(Column/Row)의 위치를 파악합니다.
         const startRow = Math.floor((subLeftItems.length - 1) / 5);
         const endRow = remain <= 0 ? -1 : Math.floor((remain - 1) / 5);
-        
-        // 열이 바뀌면서, 남은 개수가 5의 배수가 아닐 때 (경로가 꼬이는 특수 상황)
         const isSpecialCase = (startRow > endRow) && (remain % 5 !== 0);
 
         let leftTargets = [];
         if (isSpecialCase) {
-            // 크로스를 방지하기 위해 앞쪽 열에서 타겟을 지정
             if (remain > 10) {
                 leftTargets = subLeftItems.slice(10, 10 + numToCancel);
             } else {
                 leftTargets = subLeftItems.slice(0, numToCancel);
             }
         } else {
-            // 일반적인 상황: 뒤에서부터 타겟 지정
             leftTargets = subLeftItems.slice(-numToCancel);
         }
-        // ---------------------------------------------------------
 
-        // 1단계: 오른쪽 아이템을 왼쪽 타겟 아이템 위치로 부드럽게 이동
+        // 1단계: 이동
         subRightItems.forEach((rItem, i) => {
             const lItem = leftTargets[i];
             rItem.dataset.origLeft = rItem.style.left;
@@ -972,7 +972,7 @@
             rItem.style.top = lItem.style.top;
         });
 
-        // 2단계: 이동이 끝난 후(500ms) 겹쳐진 아이템들을 투명하게 만들어 사라지게 함
+        // 2단계: 투명화 (500ms 후)
         setTimeout(() => {
             if (isAnswered) return;
             
@@ -982,14 +982,14 @@
             const previewLeftCount = subLeftItems.length - subRightItems.length;
             updateSubBorders(previewLeftCount, 0);
 
-            // 3단계: 2초 후 역재생 (다시 보이게 하고 원래 자리로)
+            // 3단계: 역재생 (2초 후)
             setTimeout(() => {
                 if (isAnswered) return;
                 
                 subRightItems.forEach(rItem => rItem.style.opacity = "1");
                 leftTargets.forEach(lItem => lItem.style.opacity = "1");
-                updateSubBorders();
-
+                
+                // 주의: 아이템이 보여지자마자 제자리로 복귀 시작
                 setTimeout(() => {
                     if (isAnswered) return;
                     subRightItems.forEach(rItem => {
@@ -997,12 +997,19 @@
                         rItem.style.top = rItem.dataset.origTop;
                     });
 
-                    // 애니메이션 최종 종료
+                    // 4단계: 원래 자리로 도착 완료 후 (500ms 후)
                     setTimeout(() => {
+                        if (isAnswered) return;
+                        
+                        // =========================================================
+                        // [수정됨] 모든 애니메이션 종료 후 오른쪽 빨간 테두리 부활
+                        updateSubBorders(); 
+                        // =========================================================
+                        
                         isAnimating = false;
                         evaluateSubHintButtonState();
                     }, 500);
-                }, 100); // 투명도 복구 후 살짝 딜레이를 주고 이동 시작
+                }, 100); 
             }, 2000);
         }, 500);
     }

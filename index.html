@@ -483,20 +483,35 @@
 
         // 더하기 놀이용 화면 UI 그리기
         document.getElementById('game-area').innerHTML = `
-            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2);">
-                <!-- 캐릭터 영역 (좌측) -->
-                <div style="width: calc(var(--k) * 3); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: calc(var(--k) * 1.5);">
-                    <div id="add-speech" style="font-size: calc(var(--k) * 0.35); font-weight: bold; text-align: center; margin-bottom: calc(var(--k) * 0.3);">
+            <style>
+                /* 숫자 입력란의 위아래 화살표(스피너) 숨기기 */
+                #add-input::-webkit-outer-spin-button,
+                #add-input::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+                #add-input {
+                    -moz-appearance: textfield; /* Firefox 지원 */
+                }
+            </style>
+            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
+                
+                <!-- 캐릭터 영역 (좌측 바짝 붙이기 & 너비 절반으로 축소) -->
+                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
+                    <!-- 대사 글자 크기 40% 축소 (0.35 -> 0.21) 및 좌측 정렬 -->
+                    <div id="add-speech" style="font-size: calc(var(--k) * 0.21); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         모두 더해서<br>몇 개인지<br>알려줄래?
                     </div>
-                    <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="height: calc(var(--k) * 3); width: auto; object-fit: contain;">
+                    <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="height: calc(var(--k) * 3); width: auto; object-fit: contain; margin-left: calc(var(--k) * -0.1);">
                 </div>
                 
-                <!-- 보드 영역 (우측) -->
-                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: calc(var(--k) * 0.5);">
+                <!-- 보드 영역 (중앙 공간 자연스럽게 50% 확장됨) -->
+                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
+                    
                     <!-- 상단 안내 및 힌트 바 -->
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="add-instruction" style="font-size: calc(var(--k) * 0.3); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
+                        <!-- 안내문 글자 크기 20% 축소 (0.3 -> 0.24) -->
+                        <div id="add-instruction" style="font-size: calc(var(--k) * 0.24); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
                         ${isHardMode ? 
@@ -514,8 +529,10 @@
                     <!-- 수식 및 입력 영역 -->
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
-                        <input type="number" id="add-input" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeypress="if(event.key==='Enter') checkAdditionAnswer()">
-                        <button onclick="checkAdditionAnswer()" style="font-size: calc(var(--k) * 0.4); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.3); background-color: #FFD700; border: none; border-radius: calc(var(--k)*0.1); cursor: pointer;">확인</button>
+                        <!-- 입력 2자리 제한 및 화살표 제거 적용 -->
+                        <input type="number" id="add-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeypress="if(event.key==='Enter') checkAdditionAnswer()">
+                        <!-- '전달' 버튼과 동일한 submit-btn 클래스 적용 -->
+                        <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
                     </div>
                 </div>
             </div>

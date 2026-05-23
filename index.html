@@ -935,9 +935,32 @@
         isAnimating = true;
         evaluateSubHintButtonState();
 
-        // 파이썬 로직과 동일하게 오른쪽(뺄 수) 만큼 왼쪽 배열의 뒤에서부터 타겟을 잡습니다.
+        // ---------------------------------------------------------
+        // [수정됨] 파이썬 로직 반영: 동선 크로스 방지 알고리즘 적용
+        // ---------------------------------------------------------
         const numToCancel = subRightItems.length;
-        const leftTargets = subLeftItems.slice(-numToCancel);
+        const remain = subLeftItems.length - numToCancel;
+        
+        // 인덱스를 5로 나누어 현재 열(Column/Row)의 위치를 파악합니다.
+        const startRow = Math.floor((subLeftItems.length - 1) / 5);
+        const endRow = remain <= 0 ? -1 : Math.floor((remain - 1) / 5);
+        
+        // 열이 바뀌면서, 남은 개수가 5의 배수가 아닐 때 (경로가 꼬이는 특수 상황)
+        const isSpecialCase = (startRow > endRow) && (remain % 5 !== 0);
+
+        let leftTargets = [];
+        if (isSpecialCase) {
+            // 크로스를 방지하기 위해 앞쪽 열에서 타겟을 지정
+            if (remain > 10) {
+                leftTargets = subLeftItems.slice(10, 10 + numToCancel);
+            } else {
+                leftTargets = subLeftItems.slice(0, numToCancel);
+            }
+        } else {
+            // 일반적인 상황: 뒤에서부터 타겟 지정
+            leftTargets = subLeftItems.slice(-numToCancel);
+        }
+        // ---------------------------------------------------------
 
         // 1단계: 오른쪽 아이템을 왼쪽 타겟 아이템 위치로 부드럽게 이동
         subRightItems.forEach((rItem, i) => {

@@ -146,7 +146,10 @@
         }
 
         #banner-frame {
-            display: none; width: 100%; height: 70%; background-color: #D2B48C;
+            display: none; width: 100%; 
+            /* 변경 전: height: 70%; */
+            height: calc(var(--k) * 3.5); /* 5줄 아이템이 딱 맞게 들어가는 높이 */
+            background-color: #D2B48C;
             border: calc(var(--k) * 0.1) solid #8B4513; border-radius: calc(var(--k) * 0.2);
             display: grid; grid-template-columns: repeat(2, 1fr); justify-items: center;
             align-content: flex-start; gap: calc(var(--k) * 0.1);
@@ -484,54 +487,51 @@
         // 더하기 놀이용 화면 UI 그리기
         document.getElementById('game-area').innerHTML = `
             <style>
-                /* 숫자 입력란의 위아래 화살표(스피너) 숨기기 */
                 #add-input::-webkit-outer-spin-button,
                 #add-input::-webkit-inner-spin-button {
                     -webkit-appearance: none;
                     margin: 0;
                 }
                 #add-input {
-                    -moz-appearance: textfield; /* Firefox 지원 */
+                    -moz-appearance: textfield; 
                 }
             </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
                 
-                <!-- 캐릭터 영역 (좌측 바짝 붙이기 & 너비 절반으로 축소) -->
+                <!-- 캐릭터 영역 -->
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <!-- 대사 글자 크기 40% 축소 (0.35 -> 0.21) 및 좌측 정렬 -->
-                    <div id="add-speech" style="font-size: calc(var(--k) * 0.21); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
+                    <!-- 1. 대사 글자 크기 10% 확대 (0.21 -> 0.231) 및 볼드체 확인 -->
+                    <div id="add-speech" style="font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         모두 더해서<br>몇 개인지<br>알려줄래?
                     </div>
                     <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="height: calc(var(--k) * 3); width: auto; object-fit: contain; margin-left: calc(var(--k) * -0.1);">
                 </div>
                 
-                <!-- 보드 영역 (중앙 공간 자연스럽게 50% 확장됨) -->
+                <!-- 보드 영역 -->
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
                     
                     <!-- 상단 안내 및 힌트 바 -->
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <!-- 안내문 글자 크기 20% 축소 (0.3 -> 0.24) -->
                         <div id="add-instruction" style="font-size: calc(var(--k) * 0.24); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
                         ${isHardMode ? 
                             `<div style="font-size: calc(var(--k) * 0.25); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
-                            `<button id="hint-btn" onclick="showAdditionHint()" style="font-size: calc(var(--k) * 0.25); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
+                            // 2. 힌트 보기 글자 크기 20% 축소 (0.25 -> 0.20)
+                            `<button id="hint-btn" onclick="showAdditionHint()" style="font-size: calc(var(--k) * 0.20); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
                         }
                     </div>
                     
                     <!-- 캔버스(아이템 영역) -->
                     <div id="add-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <!-- 더하기 기호 (+) -->
-                        <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 1.5); font-weight: bold;">+</div>
+                        <!-- 3. 더하기 기호(+) 40% 축소 (1.5 -> 0.9) -->
+                        <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">+</div>
                     </div>
                     
                     <!-- 수식 및 입력 영역 -->
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
-                        <!-- 입력 2자리 제한 및 화살표 제거 적용 -->
                         <input type="number" id="add-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeypress="if(event.key==='Enter') checkAdditionAnswer()">
-                        <!-- '전달' 버튼과 동일한 submit-btn 클래스 적용 -->
                         <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
                     </div>
                 </div>
@@ -540,12 +540,11 @@
 
         const canvas = document.getElementById('add-canvas');
         
-        // 아이템 DOM 생성 함수
         const createItem = (arr) => {
             let img = document.createElement('img');
             img.src = `images/${targetItem}.png`;
             img.className = 'placed-item';
-            img.style.transition = 'all 0.5s ease-in-out'; // 애니메이션을 위한 트랜지션
+            img.style.transition = 'all 0.5s ease-in-out';
             canvas.appendChild(img);
             arr.push(img);
         };
@@ -596,12 +595,14 @@
 
         const createBorder = (x, y) => {
             const border = document.createElement('div');
-            border.className = 'add-border red-border'; // 기존 red-border 스타일 재활용
-            border.style.left = `calc(var(--k) * ${x - 0.2})`;
-            border.style.top = `calc(var(--k) * ${y - 0.2})`;
-            // 기존 .red-border가 absolute에 width/height가 고정되어 있으므로 여기서 덮어씌웁니다.
-            border.style.width = `calc(var(--k) * 1.5)`;
-            border.style.height = `calc(var(--k) * 3.9)`;
+            border.className = 'add-border red-border'; 
+            
+            // 4. 좌표 미세 조정: 왼쪽 여백(0.2 -> 0.12)을 줄여 상자를 오른쪽으로 밀고, 너비와 높이를 타이트하게 조정합니다.
+            border.style.left = `calc(var(--k) * ${x - 0.12})`;
+            border.style.top = `calc(var(--k) * ${y - 0.15})`;
+            border.style.width = `calc(var(--k) * 1.55)`;
+            border.style.height = `calc(var(--k) * 3.85)`;
+            
             canvas.appendChild(border);
         };
 

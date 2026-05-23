@@ -226,6 +226,14 @@
     let isHardMode = false;          // 하드모드(힌트 비활성화) 상태
     let hiddenCarryMode = false;     // 히든 커맨드(99) 올림 모드 상태
     let isAnswered = false;          // 정답 제출 여부
+
+    // ==========================================
+    // [빼기 놀이용 전용 상태 변수]
+    // ==========================================
+    let sub_n1 = 0;                  // 빼어지는 수 (큰 수)
+    let sub_n2 = 0;                  // 빼는 수 (작은 수)
+    let subLeftItems = [];           // 왼쪽 배치 아이템 리스트 (DOM 요소)
+    let subRightItems = [];          // 오른쪽 배치 아이템 리스트 (DOM 요소, 반전 이미지)
     
     let targetItem = "";
     let targetNumber = 0;
@@ -265,7 +273,9 @@
         if (gameName === '숫자 세기 놀이') {
             initCountingGame();
         } else if (gameName === '더하기 놀이') {
-            initAdditionGame(); // 더하기 놀이 시작!
+            initAdditionGame(); 
+        } else if (gameName === '빼기 놀이') {
+            initSubtractionGame();
         } else {
             document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
         }
@@ -760,6 +770,267 @@
             if(charImg) charImg.src = 'images/셈놀이.png';
             
             playSound('모두더해서몇개인지알려줄래.wav');
+        }
+    }
+
+    // =========================================================================
+    // [빼기 놀이 메인 로직 및 헬퍼 메서드 모음]
+    // =========================================================================
+    function initSubtractionGame() {
+        const availableItems = items.filter(i => !solvedItems['빼기 놀이'].includes(i));
+        if (availableItems.length === 0) return showCompletionScreen('빼기 놀이');
+        
+        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+        isAnswered = false;
+        isAnimating = false;
+        subLeftItems = [];
+        subRightItems = [];
+        
+        // 하드 모드 체크 (남은 아이템이 3개 이하일 때)
+        isHardMode = solvedItems['빼기 놀이'].length >= (items.length - 3);
+
+        // 빼기 놀이는 큰 수에서 작은 수를 빼도록 설정
+        let n_a = Math.floor(Math.random() * 20) + 1;
+        let n_b = Math.floor(Math.random() * 20) + 1;
+        sub_n1 = Math.max(n_a, n_b);
+        sub_n2 = Math.min(n_a, n_b);
+
+        document.getElementById('game-area').innerHTML = `
+            <style>
+                #sub-input::-webkit-outer-spin-button,
+                #sub-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                #sub-input { -moz-appearance: textfield; }
+                .inverted-item { filter: invert(1); } /* 파이썬의 ImageOps.invert 효과 */
+            </style>
+            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
+                
+                <!-- 캐릭터 영역 -->
+                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
+                    <div id="sub-speech" style="font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
+                        빼고 나면<br>몇 개인지<br>알려줄래?
+                    </div>
+                    <img id="sub-char" src="images/셈놀이.png" onerror="this.src=''" style="height: calc(var(--k) * 3); width: auto; object-fit: contain; margin-left: calc(var(--k) * -0.1);">
+                </div>
+                
+                <!-- 보드 영역 -->
+                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
+                    
+                    <!-- 상단 안내 및 힌트 바 -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
+                        <div id="sub-instruction" style="font-size: calc(var(--k) * 0.24); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
+                            ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
+                        </div>
+                        ${isHardMode ? 
+                            `<div style="font-size: calc(var(--k) * 0.25); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
+                            `<button id="sub-hint-btn" onclick="showSubtractionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
+                        }
+                    </div>
+                    
+                    <!-- 캔버스(아이템 영역) -->
+                    <div id="sub-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                        <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">-</div>
+                    </div>
+                    
+                    <!-- 수식 및 입력 영역 -->
+                    <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
+                        <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${sub_n1} - ${sub_n2} = </div>
+                        <input type="number" id="sub-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeypress="if(event.key==='Enter') checkSubtractionAnswer()">
+                        <button class="submit-btn" onclick="checkSubtractionAnswer()">확인</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const canvas = document.getElementById('sub-canvas');
+        
+        // 아이템 생성 함수
+        const createItem = (arr, isInverted) => {
+            let img = document.createElement('img');
+            img.src = `images/${targetItem}.png`;
+            img.className = 'placed-item' + (isInverted ? ' inverted-item' : '');
+            img.style.transition = 'all 0.5s ease-in-out, opacity 0.3s ease-in-out';
+            canvas.appendChild(img);
+            arr.push(img);
+        };
+
+        for(let i = 0; i < sub_n1; i++) createItem(subLeftItems, false);
+        for(let i = 0; i < sub_n2; i++) createItem(subRightItems, true);
+
+        rearrangeSubItems();
+        updateSubBorders();
+        evaluateSubHintButtonState();
+
+        document.getElementById('sub-input').focus();
+        playSound('빼고나면몇개인지알려줄래.wav');
+    }
+
+    function rearrangeSubItems() {
+        const startX1 = 0.5; // 왼쪽 그룹 X 시작 위치
+        const startX2 = 4.2; // 오른쪽 그룹 X 시작 위치
+        const startY = 0.5;  // Y 시작 위치
+
+        subLeftItems.forEach((img, i) => {
+            const col = Math.floor(i / 5);
+            const row = i % 5;
+            img.style.left = `calc(var(--k) * ${startX1 + col * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
+        });
+
+        subRightItems.forEach((img, i) => {
+            const col = Math.floor(i / 5);
+            const row = i % 5;
+            img.style.left = `calc(var(--k) * ${startX2 + col * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
+        });
+    }
+
+    function updateSubBorders(previewLeft = null, previewRight = null) {
+        const canvas = document.getElementById('sub-canvas');
+        if (!canvas) return;
+        
+        canvas.querySelectorAll('.sub-border').forEach(e => e.remove());
+
+        const lCount = previewLeft !== null ? previewLeft : subLeftItems.length;
+        const rCount = previewRight !== null ? previewRight : subRightItems.length;
+
+        const startX1 = 0.5;
+        const startX2 = 4.2;
+        const startY = 0.5;
+
+        const createBorder = (x, y) => {
+            const border = document.createElement('div');
+            border.className = 'sub-border red-border'; 
+            border.style.left = `calc(var(--k) * ${x - 0.12})`;
+            border.style.top = `calc(var(--k) * ${y - 0.15})`;
+            border.style.width = `calc(var(--k) * 1.55)`;
+            border.style.height = `calc(var(--k) * 3.85)`;
+            canvas.appendChild(border);
+        };
+
+        if (lCount >= 10) createBorder(startX1, startY);
+        if (lCount === 20) createBorder(startX1 + 1.5, startY);
+        if (rCount >= 10) createBorder(startX2, startY);
+        if (rCount === 20) createBorder(startX2 + 1.5, startY);
+    }
+
+    function evaluateSubHintButtonState() {
+        const hintBtn = document.getElementById('sub-hint-btn');
+        const instLabel = document.getElementById('sub-instruction');
+        if (!hintBtn) return;
+
+        if (isHardMode || isAnimating || subRightItems.length === 0) {
+            hintBtn.disabled = true;
+            hintBtn.style.backgroundColor = '#e0e0e0';
+            if (instLabel && subRightItems.length === 0) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
+        } else {
+            hintBtn.disabled = false;
+            hintBtn.style.backgroundColor = '#87CEEB';
+            if (instLabel) instLabel.innerText = "💡 '힌트 보기' 버튼을 눌러보세요!";
+        }
+    }
+
+    function showSubtractionHint() {
+        if (isAnswered || isAnimating || subRightItems.length === 0) return;
+
+        isAnimating = true;
+        evaluateSubHintButtonState();
+
+        // 파이썬 로직과 동일하게 오른쪽(뺄 수) 만큼 왼쪽 배열의 뒤에서부터 타겟을 잡습니다.
+        const numToCancel = subRightItems.length;
+        const leftTargets = subLeftItems.slice(-numToCancel);
+
+        // 1단계: 오른쪽 아이템을 왼쪽 타겟 아이템 위치로 부드럽게 이동
+        subRightItems.forEach((rItem, i) => {
+            const lItem = leftTargets[i];
+            rItem.dataset.origLeft = rItem.style.left;
+            rItem.dataset.origTop = rItem.style.top;
+            
+            rItem.style.left = lItem.style.left;
+            rItem.style.top = lItem.style.top;
+        });
+
+        // 2단계: 이동이 끝난 후(500ms) 겹쳐진 아이템들을 투명하게 만들어 사라지게 함
+        setTimeout(() => {
+            if (isAnswered) return;
+            
+            subRightItems.forEach(rItem => rItem.style.opacity = "0");
+            leftTargets.forEach(lItem => lItem.style.opacity = "0");
+            
+            const previewLeftCount = subLeftItems.length - subRightItems.length;
+            updateSubBorders(previewLeftCount, 0);
+
+            // 3단계: 2초 후 역재생 (다시 보이게 하고 원래 자리로)
+            setTimeout(() => {
+                if (isAnswered) return;
+                
+                subRightItems.forEach(rItem => rItem.style.opacity = "1");
+                leftTargets.forEach(lItem => lItem.style.opacity = "1");
+                updateSubBorders();
+
+                setTimeout(() => {
+                    if (isAnswered) return;
+                    subRightItems.forEach(rItem => {
+                        rItem.style.left = rItem.dataset.origLeft;
+                        rItem.style.top = rItem.dataset.origTop;
+                    });
+
+                    // 애니메이션 최종 종료
+                    setTimeout(() => {
+                        isAnimating = false;
+                        evaluateSubHintButtonState();
+                    }, 500);
+                }, 100); // 투명도 복구 후 살짝 딜레이를 주고 이동 시작
+            }, 2000);
+        }, 500);
+    }
+
+    function checkSubtractionAnswer() {
+        if (isAnswered) return;
+        const inputEl = document.getElementById('sub-input');
+        const userInput = inputEl.value.trim();
+
+        if (userInput === '') return;
+
+        if (parseInt(userInput) === (sub_n1 - sub_n2)) {
+            isAnswered = true;
+            
+            const charImg = document.getElementById('sub-char');
+            if(charImg) charImg.src = 'images/셈놀이고마워.png';
+            
+            const speech = document.getElementById('sub-speech');
+            if(speech) speech.innerHTML = "고마워!";
+
+            solvedItems['빼기 놀이'].push(targetItem);
+            updateBanner();
+
+            if (solvedItems['빼기 놀이'].length === items.length) {
+                playSound('다했어고마워.wav');
+                setTimeout(() => showCompletionScreen('빼기 놀이'), 2000);
+            } else {
+                playSound('고마워.wav');
+                setTimeout(initSubtractionGame, 2000);
+            }
+        } else {
+            const speech = document.getElementById('sub-speech');
+            if(speech) speech.innerHTML = "다시<br>해보자.";
+            playSound('다시해보자.wav');
+            
+            inputEl.value = '';
+            inputEl.focus();
+            
+            setTimeout(restoreSubQuestionText, 2000);
+        }
+    }
+
+    function restoreSubQuestionText() {
+        if (!isAnswered) {
+            const speech = document.getElementById('sub-speech');
+            if(speech) speech.innerHTML = "빼고 나면<br>몇 개인지<br>알려줄래?";
+            
+            const charImg = document.getElementById('sub-char');
+            if(charImg) charImg.src = 'images/셈놀이.png';
+            
+            playSound('빼고나면몇개인지알려줄래.wav');
         }
     }
 

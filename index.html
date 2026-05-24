@@ -254,49 +254,6 @@
         currentAudio.play().catch(e => console.log("Audio error:", e));
     }
 
-    // ==========================================
-    // [히든 커맨드 효과음 생성 함수 - 성능 및 버그 개선판]
-    // ==========================================
-    let hiddenAudioCtx = null; // 오디오 객체를 딱 하나만 보관할 변수
-
-    function playHiddenSound() {
-        // 1. 오디오 객체가 없다면 최초 1회만 생성합니다.
-        if (!hiddenAudioCtx) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            hiddenAudioCtx = new AudioContext();
-        }
-
-        // 2. 브라우저 정책상 오디오가 일시정지(suspended) 상태라면 다시 깨워줍니다.
-        if (hiddenAudioCtx.state === 'suspended') {
-            hiddenAudioCtx.resume();
-        }
-
-        const freqs = [1046.50, 1318.51, 1567.98]; // C6, E6, G6 화음
-        const duration = 0.15; // 각 음의 재생 시간 (조금 더 여유있게 늘림)
-
-        freqs.forEach((freq, index) => {
-            const osc = hiddenAudioCtx.createOscillator();
-            const gainNode = hiddenAudioCtx.createGain();
-
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-
-            const startTime = hiddenAudioCtx.currentTime + (index * duration);
-
-            // 3. 팝 노이즈(틱틱거리는 잡음) 방지 및 안정적인 볼륨 제어
-            gainNode.gain.setValueAtTime(0, startTime);
-            gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02); // 부드럽게 볼륨 UP
-            gainNode.gain.linearRampToValueAtTime(0, startTime + duration); // 부드럽게 볼륨 DOWN
-
-            osc.connect(gainNode);
-            gainNode.connect(hiddenAudioCtx.destination);
-
-            osc.start(startTime);
-            osc.stop(startTime + duration);
-        });
-    }
-
     function playSoundSequence(fileNames) {
         if (fileNames.length === 0) return;
         playSound(fileNames[0]);
@@ -764,8 +721,8 @@
 
         // 히든 커맨드 '99' 입력 처리
         if (userInput === '99') {
-            hiddenCarryMode = !hiddenCarryMode;
-            playSound('1.wav'); // 히든 사운드 대용
+            hiddenCarryMode = !hiddenCarryMode; 
+            playSound('beep.wav'); // 직접 오디오 파일을 재생하도록 수정된 부분입니다.
             inputEl.value = '';
             initAdditionGame();
             return;

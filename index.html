@@ -1107,10 +1107,9 @@
         mul_n1 = Math.floor(Math.random() * 10) + 1;
         mul_n2 = Math.floor(Math.random() * 10) + 1;
 
-        // 아이템 이미지 미리 로드
         mulImgObj = new Image();
         mulImgObj.src = `images/${targetItem}.png`;
-        mulImgObj.onload = renderMulBoard; // 로딩 완료 후 다시 그리기
+        mulImgObj.onload = renderMulBoard; 
 
         document.getElementById('game-area').innerHTML = `
             <style>
@@ -1122,7 +1121,6 @@
                 
                 <!-- 캐릭터 영역 -->
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <!-- 💡 앞서 수정한 대로 흔들림 방지용 min-height 적용 -->
                     <div id="mul-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         곱하면<br>몇 개인지<br>알려줄래?
                     </div>
@@ -1134,8 +1132,9 @@
                     
                     <!-- 상단 안내 및 힌트 바 -->
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
+                        <!-- 💡 [수정됨] 안내 문구에 줄 바꿈(<br>) 적용 -->
                         <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888;">
-                            💡 마름모 칸을 클릭하거나 '단 실행'을 눌러보세요!
+                            💡 마름모 칸을 클릭하거나<br>'단 실행'을 눌러보세요!
                         </div>
                         <div style="display: flex; gap: calc(var(--k) * 0.1);">
                             <button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
@@ -1144,8 +1143,11 @@
                     </div>
                     
                     <!-- 캔버스(마름모 그리드 영역) -->
-                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <canvas id="mul-canvas" width="800" height="700" style="width: 100%; height: 100%; display: block;" onclick="onMulCanvasClick(event)"></canvas>
+                    <!-- 💡 [수정됨] 바깥쪽 div를 활용해 세로 길이를 80%로 축소시키고, 캔버스의 논리적 높이도 700->560으로 변경했습니다. -->
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <div style="width: 100%; height: 80%; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                            <canvas id="mul-canvas" width="800" height="560" style="width: 100%; height: 100%; display: block;" onclick="onMulCanvasClick(event)"></canvas>
+                        </div>
                     </div>
                     
                     <!-- 수식 및 입력 영역 -->
@@ -1177,10 +1179,6 @@
         const dy = 22;
         const R = (Math.hypot(dx, dy) / 2) * 0.9;
         
-        // 파이썬 로직을 따른 시각적 반원 각도 세팅
-        const leftStartRad = Math.atan2(dy, dx); 
-        const rightStartRad = Math.atan2(-dy, dx);
-
         const colorA = mulColors[a] || '#B0C4DE';
         const colorB = mulColors[b] || '#B0C4DE';
 
@@ -1201,13 +1199,13 @@
                 let isFilled = mulCellStates[key];
                 let fillColor = isFilled ? '#B0C4DE' : 'white';
 
-                // 힌트 재생 중 색상 덮어쓰기
+                // 💡 [수정됨] 힌트 재생 중 눈에 보이는 색상만 임시로 바꾸고 실제 상태(mulCellStates)는 변경하지 않음
                 if (mulHintState.active) {
                     const hColor = mulColors[mulHintState.base] || '#B0C4DE';
                     if (mulHintState.isADan) {
-                        if (i < mulHintState.base && j < mulHintState.step) { fillColor = hColor; mulCellStates[key] = true; }
+                        if (i < mulHintState.base && j < mulHintState.step) fillColor = hColor; 
                     } else {
-                        if (i < mulHintState.step && j < mulHintState.base) { fillColor = hColor; mulCellStates[key] = true; }
+                        if (i < mulHintState.step && j < mulHintState.base) fillColor = hColor; 
                     }
                 }
 
@@ -1225,7 +1223,8 @@
                 arcColor = mulColors[mulHintState.step] || '#B0C4DE';
             }
             ctx.beginPath();
-            ctx.arc(cx, cy, R, -leftStartRad, -leftStartRad - Math.PI, true);
+            // 💡 [수정됨] 왼쪽 반원이 바깥쪽(왼쪽)으로 볼록하게 나오도록 각도 수정
+            ctx.arc(cx, cy, R, Math.atan2(-dy, dx), Math.atan2(dy, -dx), true);
             ctx.fillStyle = arcColor; ctx.fill();
             ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
         }
@@ -1239,7 +1238,8 @@
                 arcColor = mulColors[mulHintState.step] || '#B0C4DE';
             }
             ctx.beginPath();
-            ctx.arc(cx, cy, R, -rightStartRad, -rightStartRad + Math.PI, false);
+            // 💡 [수정됨] 오른쪽 반원이 바깥쪽(오른쪽)으로 볼록하게 나오도록 각도 수정
+            ctx.arc(cx, cy, R, Math.atan2(-dy, -dx), Math.atan2(dy, dx), false);
             ctx.fillStyle = arcColor; ctx.fill();
             ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
         }
@@ -1284,7 +1284,7 @@
             ctx.font = 'bold 40px "Malgun Gothic", sans-serif';
             ctx.textAlign = "center";
             ctx.fillText(hintFormula, 400, 520);
-            ctx.textAlign = "left"; // 기본값 복원
+            ctx.textAlign = "left"; 
         }
     }
 
@@ -1293,9 +1293,8 @@
         const canvas = document.getElementById('mul-canvas');
         const rect = canvas.getBoundingClientRect();
         
-        // CSS 스케일에 따른 캔버스 실제 좌표 보정
         const scaleX = 800 / rect.width;
-        const scaleY = 700 / rect.height;
+        const scaleY = 560 / rect.height; 
         const x = (event.clientX - rect.left) * scaleX;
         const y = (event.clientY - rect.top) * scaleY;
 
@@ -1304,7 +1303,6 @@
         const startX = 400;
         const startY = 30 + (10 - Math.max(a, b)) * 15;
 
-        // 역행렬 계산 (U, V 도출)
         const U = (x - startX) / dx;
         const V = (y - startY) / dy;
 
@@ -1350,7 +1348,6 @@
             btnA.disabled = false; btnB.disabled = true;
         }
 
-        // 보드판 색상 초기화
         mulCellStates = {};
         mulHintState = { active: false };
         renderMulBoard();
@@ -1365,6 +1362,7 @@
 
         if (step > target || isAnswered) {
             mulHintState.active = false;
+            mulCellStates = {}; 
             renderMulBoard();
             isHintPlaying = false;
             document.getElementById('mul-hint-btn-a').disabled = false;

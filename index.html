@@ -234,6 +234,22 @@
     let sub_n2 = 0;                  // 빼는 수 (작은 수)
     let subLeftItems = [];           // 왼쪽 배치 아이템 리스트 (DOM 요소)
     let subRightItems = [];          // 오른쪽 배치 아이템 리스트 (DOM 요소, 반전 이미지)
+
+    // ==========================================
+    // [곱하기 놀이용 전용 상태 변수]
+    // ==========================================
+    let mul_n1 = 0;
+    let mul_n2 = 0;
+    let mulCellStates = {};
+    let mulImgObj = null; // 캔버스에 그릴 아이템 이미지 객체
+    let isHintPlaying = false;
+    let currentHintSession = 0; // 힌트 전용 애니메이션 중지용 세션
+    let mulHintState = { active: false, base: 0, target: 0, step: 0, isADan: true };
+
+    const mulColors = {
+        1: '#FF0000', 2: '#FFAA00', 3: '#AAFF00', 4: '#00FF00', 5: '#00FFAA', 
+        6: '#00AAFF', 7: '#0000FF', 8: '#AA00FF', 9: '#FF00AA', 10: '#FF0000'
+    };
     
     let targetItem = "";
     let targetNumber = 0;
@@ -281,6 +297,8 @@
             initAdditionGame(); 
         } else if (gameName === '빼기 놀이') {
             initSubtractionGame(); 
+        } else if (gameName === '곱하기 놀이') {
+            initMultiplicationGame();
         } else {
             document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
         }
@@ -1070,6 +1088,388 @@
             if(charImg) charImg.src = 'images/셈놀이.png';
             
             playSound('빼고나면몇개인지알려줄래.wav');
+        }
+    }
+
+    // =========================================================================
+    // [곱하기 놀이 메인 로직 및 헬퍼 메서드 모음]
+    // =========================================================================
+    function initMultiplicationGame() {
+        const availableItems = items.filter(i => !solvedItems['곱하기 놀이'].includes(i));
+        if (availableItems.length === 0) return showCompletionScreen('곱하기 놀이');
+        
+        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+        isAnswered = false;
+        isHintPlaying = false;
+        mulCellStates = {};
+        mulHintState = { active: false };
+
+        mul_n1 = Math.floor(Math.random() * 10) + 1;
+        mul_n2 = Math.floor(Math.random() * 10) + 1;
+
+        // 아이템 이미지 미리 로드
+        mulImgObj = new Image();
+        mulImgObj.src = `images/${targetItem}.png`;
+        mulImgObj.onload = renderMulBoard; // 로딩 완료 후 다시 그리기
+
+        document.getElementById('game-area').innerHTML = `
+            <style>
+                #mul-input::-webkit-outer-spin-button,
+                #mul-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                #mul-input { -moz-appearance: textfield; }
+            </style>
+            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
+                
+                <!-- 캐릭터 영역 -->
+                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
+                    <!-- 💡 앞서 수정한 대로 흔들림 방지용 min-height 적용 -->
+                    <div id="mul-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
+                        곱하면<br>몇 개인지<br>알려줄래?
+                    </div>
+                    <img id="mul-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
+                </div>
+                
+                <!-- 보드 영역 -->
+                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
+                    
+                    <!-- 상단 안내 및 힌트 바 -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
+                        <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888;">
+                            💡 마름모 칸을 클릭하거나 '단 실행'을 눌러보세요!
+                        </div>
+                        <div style="display: flex; gap: calc(var(--k) * 0.1);">
+                            <button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
+                            <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 캔버스(마름모 그리드 영역) -->
+                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                        <canvas id="mul-canvas" width="800" height="700" style="width: 100%; height: 100%; display: block;" onclick="onMulCanvasClick(event)"></canvas>
+                    </div>
+                    
+                    <!-- 수식 및 입력 영역 -->
+                    <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
+                        <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
+                        <input type="number" id="mul-input" oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeypress="if(event.key==='Enter') checkMultiplicationAnswer()">
+                        <button class="submit-btn" onclick="checkMultiplicationAnswer()">확인</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        renderMulBoard();
+        document.getElementById('mul-input').focus();
+        playSound('곱하면몇개인지알려줄래.wav');
+    }
+
+    function renderMulBoard() {
+        const canvas = document.getElementById('mul-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const a = mul_n1;
+        const b = mul_n2;
+        const startX = 400;
+        const startY = 30 + (10 - Math.max(a, b)) * 15;
+        const dx = 33;
+        const dy = 22;
+        const R = (Math.hypot(dx, dy) / 2) * 0.9;
+        
+        // 파이썬 로직을 따른 시각적 반원 각도 세팅
+        const leftStartRad = Math.atan2(dy, dx); 
+        const rightStartRad = Math.atan2(-dy, dx);
+
+        const colorA = mulColors[a] || '#B0C4DE';
+        const colorB = mulColors[b] || '#B0C4DE';
+
+        // 1. 마름모 셀 그리기
+        for (let i = 0; i < a; i++) {
+            for (let j = 0; j < b; j++) {
+                let x0 = startX - i * dx + j * dx;
+                let y0 = startY + i * dy + j * dy;
+                
+                ctx.beginPath();
+                ctx.moveTo(x0, y0);
+                ctx.lineTo(x0 - dx, y0 + dy);
+                ctx.lineTo(x0, y0 + 2 * dy);
+                ctx.lineTo(x0 + dx, y0 + dy);
+                ctx.closePath();
+                
+                const key = `${i}_${j}`;
+                let isFilled = mulCellStates[key];
+                let fillColor = isFilled ? '#B0C4DE' : 'white';
+
+                // 힌트 재생 중 색상 덮어쓰기
+                if (mulHintState.active) {
+                    const hColor = mulColors[mulHintState.base] || '#B0C4DE';
+                    if (mulHintState.isADan) {
+                        if (i < mulHintState.base && j < mulHintState.step) { fillColor = hColor; mulCellStates[key] = true; }
+                    } else {
+                        if (i < mulHintState.step && j < mulHintState.base) { fillColor = hColor; mulCellStates[key] = true; }
+                    }
+                }
+
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+            }
+        }
+
+        // 2. 왼쪽 아크(반원) 그리기
+        for (let i = 0; i < a; i++) {
+            let cx = startX - (i + 0.5) * dx;
+            let cy = startY + (i + 0.5) * dy;
+            let arcColor = colorA;
+            if (mulHintState.active && !mulHintState.isADan && i < mulHintState.step) {
+                arcColor = mulColors[mulHintState.step] || '#B0C4DE';
+            }
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, -leftStartRad, -leftStartRad - Math.PI, true);
+            ctx.fillStyle = arcColor; ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
+        }
+
+        // 3. 오른쪽 아크(반원) 그리기
+        for (let j = 0; j < b; j++) {
+            let cx = startX + (j + 0.5) * dx;
+            let cy = startY + (j + 0.5) * dy;
+            let arcColor = colorB;
+            if (mulHintState.active && mulHintState.isADan && j < mulHintState.step) {
+                arcColor = mulColors[mulHintState.step] || '#B0C4DE';
+            }
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, -rightStartRad, -rightStartRad + Math.PI, false);
+            ctx.fillStyle = arcColor; ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
+        }
+
+        // 4. 격자 외곽선 그리기
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#B0C4DE';
+        for (let i = 0; i <= a; i++) {
+            ctx.beginPath();
+            ctx.moveTo(startX - i * dx, startY + i * dy);
+            ctx.lineTo((startX - i * dx) + b * dx, (startY + i * dy) + b * dy);
+            ctx.stroke();
+        }
+        for (let j = 0; j <= b; j++) {
+            ctx.beginPath();
+            ctx.moveTo(startX + j * dx, startY + j * dy);
+            ctx.lineTo((startX + j * dx) - a * dx, (startY + j * dy) + a * dy);
+            ctx.stroke();
+        }
+
+        // 5. a, b 텍스트 표시
+        ctx.fillStyle = '#333333';
+        ctx.font = 'bold 25px "Malgun Gothic", sans-serif';
+        ctx.fillText(a, startX - (a / 2) * dx - 25, startY + (a / 2) * dy - 15);
+        ctx.fillText(b, startX + (b / 2) * dx + 15, startY + (b / 2) * dy - 15);
+
+        // 6. 아이템 이미지 표시
+        if (mulImgObj && mulImgObj.complete && mulImgObj.naturalHeight !== 0) {
+            for (let i = 0; i < a; i++) {
+                for (let j = 0; j < b; j++) {
+                    let cx = startX - (i + 0.5) * dx + (j + 0.5) * dx;
+                    let cy = startY + (i + 0.5) * dy + (j + 0.5) * dy;
+                    ctx.drawImage(mulImgObj, cx - 23, cy - 23, 46, 46);
+                }
+            }
+        }
+
+        // 7. 힌트 진행 중 가운데 수식 텍스트
+        if (mulHintState.active) {
+            const hintFormula = `${mulHintState.base} x ${mulHintState.step} = ${mulHintState.base * mulHintState.step}`;
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 40px "Malgun Gothic", sans-serif';
+            ctx.textAlign = "center";
+            ctx.fillText(hintFormula, 400, 520);
+            ctx.textAlign = "left"; // 기본값 복원
+        }
+    }
+
+    function onMulCanvasClick(event) {
+        if (isAnswered || isHintPlaying) return;
+        const canvas = document.getElementById('mul-canvas');
+        const rect = canvas.getBoundingClientRect();
+        
+        // CSS 스케일에 따른 캔버스 실제 좌표 보정
+        const scaleX = 800 / rect.width;
+        const scaleY = 700 / rect.height;
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
+
+        const a = mul_n1, b = mul_n2;
+        const dx = 33, dy = 22;
+        const startX = 400;
+        const startY = 30 + (10 - Math.max(a, b)) * 15;
+
+        // 역행렬 계산 (U, V 도출)
+        const U = (x - startX) / dx;
+        const V = (y - startY) / dy;
+
+        const iIdx = Math.floor((V - U) / 2);
+        const jIdx = Math.floor((V + U) / 2);
+
+        if (iIdx >= 0 && iIdx < a && jIdx >= 0 && jIdx < b) {
+            const key = `${iIdx}_${jIdx}`;
+            mulCellStates[key] = !mulCellStates[key];
+            renderMulBoard();
+        }
+    }
+
+    function getKrNumStr(n) {
+        const units = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+        if (n === 10) return '십';
+        if (n === 100) return '백';
+        if (n < 10) return units[n];
+        
+        const tens = Math.floor(n / 10);
+        const ones = n % 10;
+        
+        let res = '';
+        if (tens > 1) res += units[tens];
+        if (tens >= 1) res += '십';
+        res += units[ones];
+        return res;
+    }
+
+    function executeDanHint(base, target, isADan) {
+        if (isAnswered) return;
+        
+        currentHintSession++;
+        const hintSessionId = currentHintSession;
+        isHintPlaying = true;
+        
+        const btnA = document.getElementById('mul-hint-btn-a');
+        const btnB = document.getElementById('mul-hint-btn-b');
+        
+        if (isADan) {
+            btnA.disabled = true; btnB.disabled = false;
+        } else {
+            btnA.disabled = false; btnB.disabled = true;
+        }
+
+        // 보드판 색상 초기화
+        mulCellStates = {};
+        mulHintState = { active: false };
+        renderMulBoard();
+
+        const expectedMenuSession = currentSessionId;
+        playHintStep(base, target, 1, isADan, expectedMenuSession, hintSessionId);
+    }
+
+    function playHintStep(base, target, step, isADan, menuSession, hintSession) {
+        if (currentSessionId !== menuSession) return;
+        if (currentHintSession !== hintSession) return;
+
+        if (step > target || isAnswered) {
+            mulHintState.active = false;
+            renderMulBoard();
+            isHintPlaying = false;
+            document.getElementById('mul-hint-btn-a').disabled = false;
+            document.getElementById('mul-hint-btn-b').disabled = false;
+            return;
+        }
+
+        mulHintState = { active: true, base: base, target: target, step: step, isADan: isADan };
+        renderMulBoard();
+
+        const w1 = getKrNumStr(base) + ".wav";
+        const w2 = "곱하기.wav";
+        const w3 = getKrNumStr(step) + ".wav";
+        const w4 = "는.wav";
+        const w5 = getKrNumStr(base * step) + ".wav";
+        
+        const sequence = [w1, w2, w3, w4, w5];
+        
+        playWordSequence(sequence, () => {
+            setTimeout(() => {
+                playHintStep(base, target, step + 1, isADan, menuSession, hintSession);
+            }, 500);
+        }, menuSession, hintSession);
+    }
+
+    function playWordSequence(sequence, onComplete, menuSession, hintSession) {
+        if (currentSessionId !== menuSession) return;
+        if (currentHintSession !== hintSession) return;
+
+        if (sequence.length === 0 || isAnswered) {
+            onComplete();
+            return;
+        }
+        
+        const wordFile = sequence.shift();
+        
+        // 기존 currentAudio를 활용하여 재생합니다.
+        const isNumberSound = /^([가-힣]+|\d+)(\[고유어\])?\.wav$/.test(wordFile);
+        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
+        
+        currentAudio.pause();
+        currentAudio.src = folder + wordFile;
+        currentAudio.onended = () => {
+            setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 150);
+        };
+        currentAudio.play().catch(e => {
+            console.log("Sequence Audio error:", e);
+            // 소리 파일이 없거나 오류 발생 시 다음으로 넘어감
+            setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 500);
+        });
+    }
+
+    function checkMultiplicationAnswer() {
+        if (isAnswered) return;
+        const inputEl = document.getElementById('mul-input');
+        const userInput = inputEl.value.trim();
+
+        // 💡 [히든 커맨드] 99 입력 시 beep 소리와 함께 문제 리셋
+        if (userInput === '99') {
+            const beepAudio = new Audio('sounds_basic/beep.wav');
+            beepAudio.play().catch(e => console.log("Beep error:", e));
+            
+            inputEl.value = '';
+            initMultiplicationGame();
+            return;
+        }
+
+        if (userInput === '') return;
+        const correctAnswer = mul_n1 * mul_n2;
+
+        if (parseInt(userInput) === correctAnswer) {
+            isAnswered = true;
+            
+            const charImg = document.getElementById('mul-char');
+            if(charImg) charImg.src = 'images/셈놀이고마워.png';
+            
+            const speech = document.getElementById('mul-speech');
+            if(speech) speech.innerHTML = "고마워!";
+
+            solvedItems['곱하기 놀이'].push(targetItem);
+            updateBanner();
+
+            if (solvedItems['곱하기 놀이'].length === items.length) {
+                playSound('다했어고마워.wav');
+                setTimeout(() => showCompletionScreen('곱하기 놀이'), 2000);
+            } else {
+                playSound('고마워.wav');
+                setTimeout(initMultiplicationGame, 2000);
+            }
+        } else {
+            const speech = document.getElementById('mul-speech');
+            if(speech) speech.innerHTML = "다시<br>해보자.";
+            playSound('다시해보자.wav');
+            
+            inputEl.value = '';
+            inputEl.focus();
+            
+            setTimeout(() => {
+                if (!isAnswered) {
+                    if(speech) speech.innerHTML = "곱하면<br>몇 개인지<br>알려줄래?";
+                    const charImg = document.getElementById('mul-char');
+                    if(charImg) charImg.src = 'images/셈놀이.png';
+                    playSound('곱하면몇개인지알려줄래.wav');
+                }
+            }, 2000);
         }
     }
 

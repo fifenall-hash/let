@@ -146,12 +146,12 @@
         }
 
         #banner-frame {
-            display: none; width: 100%; 
-            /* 변경 전: height: 70%; */
-            height: calc(var(--k) * 3.5); /* 5줄 아이템이 딱 맞게 들어가는 높이 */
+            display: none;
+            width: 100%; 
+            height: calc(var(--k) * 3.5);
             background-color: #D2B48C;
             border: calc(var(--k) * 0.1) solid #8B4513; border-radius: calc(var(--k) * 0.2);
-            display: grid; grid-template-columns: repeat(2, 1fr); justify-items: center;
+            grid-template-columns: repeat(2, 1fr); justify-items: center;
             align-content: flex-start; gap: calc(var(--k) * 0.1);
             padding: calc(var(--k) * 0.2); box-sizing: border-box; overflow-y: auto;
         }

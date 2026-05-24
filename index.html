@@ -732,7 +732,11 @@
         // 히든 커맨드 '99' 입력 처리
         if (userInput === '99') {
             hiddenCarryMode = !hiddenCarryMode; 
-            playSound('beep.wav'); // 직접 오디오 파일을 재생하도록 수정된 부분입니다.
+            
+            // 💡 [수정됨] 기존 플레이어와 충돌하지 않도록, 독립적인 미니 플레이어를 생성해 즉시 재생합니다.
+            const beepAudio = new Audio('sounds_basic/beep.wav');
+            beepAudio.play().catch(e => console.log("Beep error:", e));
+            
             inputEl.value = '';
             initAdditionGame();
             return;

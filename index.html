@@ -254,6 +254,47 @@
         currentAudio.play().catch(e => console.log("Audio error:", e));
     }
 
+    // ==========================================
+    // [히든 커맨드 효과음 생성 함수]
+    // ==========================================
+    function playHiddenSound() {
+        // 1. 브라우저의 Web Audio API 컨텍스트를 가져옵니다.
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) {
+            console.log("이 브라우저에서는 Web Audio API를 지원하지 않습니다.");
+            return;
+        }
+        const ctx = new AudioContext();
+
+        // 2. 파이썬 코드와 동일한 주파수(C6, E6, G6) 및 재생 시간 설정
+        const freqs = [1046.50, 1318.51, 1567.98];
+        const duration = 0.1; // 각 음의 길이 (0.1초)
+
+        freqs.forEach((freq, index) => {
+            // 소리를 만들어내는 발진기(Oscillator)와 볼륨 조절기(Gain) 생성
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            // 파이썬의 math.sin과 동일한 사인파(Sine wave) 설정 및 주파수 할당
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+
+            // 적절한 볼륨 설정 (파이썬의 volume = 16000과 유사하게 0.3 정도로 맞춤)
+            // 딱딱 끊기는 소리를 방지하기 위해 미세한 페이드아웃 적용
+            gainNode.gain.setValueAtTime(0.3, ctx.currentTime + (index * duration));
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + ((index + 1) * duration));
+
+            // 발진기 -> 볼륨 조절기 -> 최종 출력(스피커)으로 연결
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            // 순차적으로 재생되도록 시작 시간과 종료 시간 계산
+            const startTime = ctx.currentTime + (index * duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        });
+    }
+
     function playSoundSequence(fileNames) {
         if (fileNames.length === 0) return;
         playSound(fileNames[0]);

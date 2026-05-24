@@ -265,7 +265,12 @@
         if (bgm.paused) bgm.play().catch(e => console.log("BGM error", e));
     }, { once: true });
 
+    // 💡 애니메이션 세션을 관리하기 위한 글로벌 변수
+    let currentSessionId = 0; 
+
     function startGame(gameName) {
+        currentSessionId++; // 메뉴를 누를 때마다 세션 ID를 증가시켜 기존 타이머들을 무효화합니다.
+        
         currentGame = gameName;
         document.getElementById('banner-frame').style.display = 'grid';
         updateBanner();
@@ -275,7 +280,7 @@
         } else if (gameName === '더하기 놀이') {
             initAdditionGame(); 
         } else if (gameName === '빼기 놀이') {
-            initSubtractionGame();
+            initSubtractionGame(); 
         } else {
             document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
         }
@@ -675,7 +680,6 @@
         const startX_tgt = isLeftTarget ? 0.5 : 4.2;
         const startY = 0.5;
 
-        // 아이템 이동 시작 (애니메이션 적용)
         itemsToMove.forEach((img, i) => {
             const targetIdx = tgtList.length + i;
             const col = Math.floor(targetIdx / 5);
@@ -688,16 +692,21 @@
             img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
         });
 
-        // 애니메이션 도달 후 로직 처리 (CSS transition 시간 고려)
+        // 💡 힌트를 시작할 때의 세션 ID를 기억합니다.
+        const expectedSessionId = currentSessionId; 
+
         setTimeout(() => {
+            if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
             if (isAnswered) return;
+            
             let previewLeft = lCount + (isLeftTarget ? moveAmt : -moveAmt);
             let previewRight = rCount + (isLeftTarget ? -moveAmt : moveAmt);
             updateAdditionBorders(previewLeft, previewRight);
 
-            // 2초 후 제자리로 복귀
             setTimeout(() => {
+                if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
                 if (isAnswered) return;
+                
                 updateAdditionBorders(); 
                 
                 itemsToMove.forEach(img => {
@@ -705,8 +714,9 @@
                     img.style.top = img.dataset.origTop;
                 });
 
-                // 제자리 복귀 완료 후 상태 초기화
                 setTimeout(() => {
+                    if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+                    
                     isAnimating = false;
                     evaluateHintButtonState();
                 }, 500); 
@@ -938,11 +948,7 @@
         isAnimating = true;
         evaluateSubHintButtonState();
 
-        // =====================================================================
-        // [수정됨] 애니메이션 시작 즉시 오른쪽 10개 묶음 빨간 테두리 제거
-        // (왼쪽 개수는 그대로 유지하고, 오른쪽 개수(previewRight)를 0으로 강제 지정)
         updateSubBorders(subLeftItems.length, 0); 
-        // =====================================================================
 
         const numToCancel = subRightItems.length;
         const remain = subLeftItems.length - numToCancel;
@@ -962,7 +968,6 @@
             leftTargets = subLeftItems.slice(-numToCancel);
         }
 
-        // 1단계: 이동
         subRightItems.forEach((rItem, i) => {
             const lItem = leftTargets[i];
             rItem.dataset.origLeft = rItem.style.left;
@@ -972,8 +977,11 @@
             rItem.style.top = lItem.style.top;
         });
 
-        // 2단계: 투명화 (500ms 후)
+        // 💡 힌트를 시작할 때의 세션 ID를 기억합니다.
+        const expectedSessionId = currentSessionId;
+
         setTimeout(() => {
+            if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
             if (isAnswered) return;
             
             subRightItems.forEach(rItem => rItem.style.opacity = "0");
@@ -982,30 +990,27 @@
             const previewLeftCount = subLeftItems.length - subRightItems.length;
             updateSubBorders(previewLeftCount, 0);
 
-            // 3단계: 역재생 (2초 후)
             setTimeout(() => {
+                if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
                 if (isAnswered) return;
                 
                 subRightItems.forEach(rItem => rItem.style.opacity = "1");
                 leftTargets.forEach(lItem => lItem.style.opacity = "1");
                 
-                // 주의: 아이템이 보여지자마자 제자리로 복귀 시작
                 setTimeout(() => {
+                    if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
                     if (isAnswered) return;
+                    
                     subRightItems.forEach(rItem => {
                         rItem.style.left = rItem.dataset.origLeft;
                         rItem.style.top = rItem.dataset.origTop;
                     });
 
-                    // 4단계: 원래 자리로 도착 완료 후 (500ms 후)
                     setTimeout(() => {
+                        if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
                         if (isAnswered) return;
                         
-                        // =========================================================
-                        // [수정됨] 모든 애니메이션 종료 후 오른쪽 빨간 테두리 부활
                         updateSubBorders(); 
-                        // =========================================================
-                        
                         isAnimating = false;
                         evaluateSubHintButtonState();
                     }, 500);

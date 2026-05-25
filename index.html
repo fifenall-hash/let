@@ -250,6 +250,13 @@
         1: '#FF0000', 2: '#FFAA00', 3: '#AAFF00', 4: '#00FF00', 5: '#00FFAA', 
         6: '#00AAFF', 7: '#0000FF', 8: '#AA00FF', 9: '#FF00AA', 10: '#FF0000'
     };
+
+    // ==========================================
+    // [시계 보기 놀이용 전용 상태 변수]
+    // ==========================================
+    let clock_h = 0;
+    let clock_m = 0;
+    let isClockHintActive = false; // 힌트 동작 여부
     
     let targetItem = "";
     let targetNumber = 0;
@@ -299,6 +306,8 @@
             initSubtractionGame(); 
         } else if (gameName === '곱하기 놀이') {
             initMultiplicationGame();
+        } else if (gameName === '시계 보기 놀이') {
+            initClockGame();
         } else {
             document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
         }
@@ -1465,6 +1474,247 @@
                     const charImg = document.getElementById('mul-char');
                     if(charImg) charImg.src = 'images/셈놀이.png';
                     playSound('곱하면몇개인지알려줄래.wav');
+                }
+            }, 2000);
+        }
+    }
+
+    // =========================================================================
+    // [시계 보기 놀이 메인 로직 및 헬퍼 메서드 모음]
+    // =========================================================================
+    function initClockGame() {
+        const availableItems = items.filter(i => !solvedItems['시계 보기 놀이'].includes(i));
+        if (availableItems.length === 0) return showCompletionScreen('시계 보기 놀이');
+        
+        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+        isAnswered = false;
+        isClockHintActive = false;
+
+        // 시간(1~12), 분(0~55, 5분 단위)
+        clock_h = Math.floor(Math.random() * 12) + 1;
+        clock_m = Math.floor(Math.random() * 12) * 5; 
+
+        // UI 규격은 '더하기/빼기/곱하기'와 100% 동일하게 유지
+        document.getElementById('game-area').innerHTML = `
+            <style>
+                .clock-input::-webkit-outer-spin-button,
+                .clock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                .clock-input { -moz-appearance: textfield; text-align: center; font-weight: bold; font-family: 'Malgun Gothic', sans-serif; }
+            </style>
+            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
+                
+                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
+                    <div id="clock-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
+                        몇 시 몇 분<br>인지<br>알려줄래?
+                    </div>
+                    <img id="clock-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
+                </div>
+                
+                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
+                        <div id="clock-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888; line-height: 1.2;">
+                            💡 시계를 보고 몇 시 몇 분인지 적어보세요!
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <button id="clock-hint-btn" onclick="showClockHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                        <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;"></canvas>
+                    </div>
+                    
+                    <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
+                        <input type="number" id="clock-h-input" class="clock-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080;" onkeypress="if(event.key==='Enter') document.getElementById('clock-m-input').focus()">
+                        <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
+                        
+                        <input type="number" id="clock-m-input" class="clock-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2);" onkeypress="if(event.key==='Enter') checkClockAnswer()">
+                        <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
+                        
+                        <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        renderClockBoard();
+        document.getElementById('clock-h-input').focus();
+        playSound('몇시몇분인지알려줄래.wav');
+    }
+
+    function renderClockBoard() {
+        const canvas = document.getElementById('clock-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cx = 400;
+        const cy = 350; // 파이썬의 260보다 화면 중앙에 오도록 Y좌표 미세 조정
+        const r = 240;  // 캔버스 크기에 맞게 시계 크기 확대
+
+        // 1. 시계 바탕 원
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white'; ctx.fill();
+        ctx.lineWidth = 10; ctx.strokeStyle = '#8B4513'; ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 12, 0, 2 * Math.PI);
+        ctx.lineWidth = 3; ctx.strokeStyle = '#D2B48C'; ctx.stroke();
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // 2. 눈금 및 숫자
+        for (let i = 1; i <= 60; i++) {
+            const angle = (i * 6 - 90) * (Math.PI / 180);
+            const isHour = (i % 5 === 0);
+            
+            const outerR = r - 15;
+            const innerR = isHour ? r - 35 : r - 25;
+            
+            const x1 = cx + innerR * Math.cos(angle);
+            const y1 = cy + innerR * Math.sin(angle);
+            const x2 = cx + outerR * Math.cos(angle);
+            const y2 = cy + outerR * Math.sin(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = isHour ? 5 : 2;
+            ctx.strokeStyle = isHour ? 'black' : 'gray';
+            ctx.stroke();
+
+            // 시간 숫자 표시 (1~12)
+            if (isHour) {
+                const num = i / 5;
+                const textR = r - 70;
+                const tx = cx + textR * Math.cos(angle);
+                const ty = cy + textR * Math.sin(angle);
+                
+                // 힌트 상태일 때 오답 숨기기
+                if (!isClockHintActive || num === clock_h) {
+                    ctx.fillStyle = '#008080';
+                    ctx.font = 'bold 35px Arial';
+                    ctx.fillText(num, tx, ty);
+                }
+
+                // 분 숫자 표시 (0~55)
+                const minVal = (i === 60) ? 0 : i;
+                const minStr = minVal < 10 ? '0' + minVal : minVal.toString();
+                const minTextR = r + 30;
+                const mtx = cx + minTextR * Math.cos(angle);
+                const mty = cy + minTextR * Math.sin(angle);
+                
+                if (!isClockHintActive || minVal === clock_m) {
+                    ctx.fillStyle = '#800080';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.fillText(minStr, mtx, mty);
+                }
+            }
+        }
+
+        ctx.lineCap = 'round';
+
+        // 3. 시침 (시간 + 분에 따른 미세 각도 이동)
+        const hLen = 110;
+        const hAngle = ((clock_h % 12) * 30 + (clock_m * 0.5) - 90) * (Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + hLen * Math.cos(hAngle), cy + hLen * Math.sin(hAngle));
+        ctx.lineWidth = 14; ctx.strokeStyle = '#008080'; ctx.stroke();
+
+        // 4. 분침
+        const mLen = 160;
+        const mAngle = (clock_m * 6 - 90) * (Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + mLen * Math.cos(mAngle), cy + mLen * Math.sin(mAngle));
+        ctx.lineWidth = 8; ctx.strokeStyle = '#800080'; ctx.stroke();
+
+        // 5. 중심점 핀
+        ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 2 * Math.PI); ctx.fillStyle = '#8B4513'; ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2 * Math.PI); ctx.fillStyle = '#FFD700'; ctx.fill();
+    }
+
+    function showClockHint() {
+        if (isAnswered || isClockHintActive) return;
+        
+        isClockHintActive = true;
+        document.getElementById('clock-hint-btn').disabled = true;
+        document.getElementById('clock-hint-btn').style.backgroundColor = '#e0e0e0';
+        
+        // 힌트 모드로 캔버스 다시 그리기 (정답만 보임)
+        renderClockBoard();
+        
+        currentSessionId++; // 세션 분리
+        const session = currentSessionId;
+        
+        setTimeout(() => {
+            if (session !== currentSessionId) return; // 메뉴 바뀌면 취소
+            if (isAnswered) return;
+            
+            isClockHintActive = false;
+            renderClockBoard();
+            
+            const btn = document.getElementById('clock-hint-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.style.backgroundColor = '#87CEEB';
+            }
+        }, 2000);
+    }
+
+    function checkClockAnswer() {
+        if (isAnswered) return;
+        const inputH = document.getElementById('clock-h-input').value.trim();
+        const inputM = document.getElementById('clock-m-input').value.trim();
+
+        // 히든 커맨드: 99 입력 시 리셋
+        if (inputH === '99' || inputM === '99') {
+            const beepAudio = new Audio('sounds_basic/beep.wav');
+            beepAudio.play().catch(e => console.log("Beep error:", e));
+            initClockGame();
+            return;
+        }
+
+        if (inputH === '' || inputM === '') return;
+
+        if (parseInt(inputH) === clock_h && parseInt(inputM) === clock_m) {
+            isAnswered = true;
+            
+            const charImg = document.getElementById('clock-char');
+            if(charImg) charImg.src = 'images/셈놀이고마워.png';
+            
+            const speech = document.getElementById('clock-speech');
+            if(speech) speech.innerHTML = "고마워!";
+
+            solvedItems['시계 보기 놀이'].push(targetItem);
+            updateBanner();
+
+            if (solvedItems['시계 보기 놀이'].length === items.length) {
+                playSound('다했어고마워.wav');
+                setTimeout(() => showCompletionScreen('시계 보기 놀이'), 2000);
+            } else {
+                playSound('고마워.wav');
+                setTimeout(initClockGame, 2000);
+            }
+        } else {
+            const speech = document.getElementById('clock-speech');
+            if(speech) speech.innerHTML = "다시<br>해보자.";
+            playSound('다시해보자.wav');
+            
+            document.getElementById('clock-h-input').value = '';
+            document.getElementById('clock-m-input').value = '';
+            document.getElementById('clock-h-input').focus();
+            
+            setTimeout(() => {
+                if (!isAnswered) {
+                    if(speech) speech.innerHTML = "몇 시 몇 분<br>인지<br>알려줄래?";
+                    const charImg = document.getElementById('clock-char');
+                    if(charImg) charImg.src = 'images/셈놀이.png';
+                    playSound('몇시몇분인지알려줄래.wav');
                 }
             }, 2000);
         }

@@ -1119,7 +1119,6 @@
             </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
                 
-                <!-- 캐릭터 영역 -->
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
                     <div id="mul-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         곱하면<br>몇 개인지<br>알려줄래?
@@ -1127,30 +1126,22 @@
                     <img id="mul-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
                 
-                <!-- 보드 영역 -->
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
                     
-                    <!-- 상단 안내 및 힌트 바 -->
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <!-- 💡 [수정됨] 안내 문구에 줄 바꿈(<br>) 적용 -->
-                        <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888;">
+                        <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888; line-height: 1.2;">
                             💡 마름모 칸을 클릭하거나<br>'단 실행'을 눌러보세요!
                         </div>
-                        <div style="display: flex; gap: calc(var(--k) * 0.1);">
+                        <div style="display: flex; align-items: center; gap: calc(var(--k) * 0.1);">
                             <button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
                             <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>
                         </div>
                     </div>
                     
-                    <!-- 캔버스(마름모 그리드 영역) -->
-                    <!-- 💡 [수정됨] 바깥쪽 div를 활용해 세로 길이를 80%로 축소시키고, 캔버스의 논리적 높이도 700->560으로 변경했습니다. -->
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 0;">
-                        <div style="width: 100%; height: 80%; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                            <canvas id="mul-canvas" width="800" height="560" style="width: 100%; height: 100%; display: block;" onclick="onMulCanvasClick(event)"></canvas>
-                        </div>
+                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                        <canvas id="mul-canvas" width="800" height="700" style="width: 100%; height: 100%; display: block;" onclick="onMulCanvasClick(event)"></canvas>
                     </div>
                     
-                    <!-- 수식 및 입력 영역 -->
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
                         <input type="number" id="mul-input" oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeypress="if(event.key==='Enter') checkMultiplicationAnswer()">
@@ -1293,8 +1284,9 @@
         const canvas = document.getElementById('mul-canvas');
         const rect = canvas.getBoundingClientRect();
         
+        // 💡 캔버스 높이가 원상복구(700) 되었으므로 scaleY 비율을 700으로 다시 맞춥니다.
         const scaleX = 800 / rect.width;
-        const scaleY = 560 / rect.height; 
+        const scaleY = 700 / rect.height; 
         const x = (event.clientX - rect.left) * scaleX;
         const y = (event.clientY - rect.top) * scaleY;
 

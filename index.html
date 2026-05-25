@@ -1148,7 +1148,7 @@
                     </div>
                     
                     <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <canvas id="mul-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;" onclick="onMulCanvasClick(event)"></canvas>
+                        <canvas id="mul-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;" onclick="onMulCanvasClick(event)"></canvas>
                     </div>
                     
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
@@ -1298,18 +1298,23 @@
         const canvas = document.getElementById('mul-canvas');
         const rect = canvas.getBoundingClientRect();
         
-        const scaleX = 800 / rect.width;
-        const scaleY = 700 / rect.height; 
-        const x = (event.clientX - rect.left) * scaleX;
-        const y = (event.clientY - rect.top) * scaleY;
+        // 💡 [수정됨] object-fit: contain 에 의해 생성된 투명 여백(레터박스)을 계산하여 정확한 클릭 위치를 추적하는 공식입니다.
+        const scale = Math.min(rect.width / 800, rect.height / 700);
+        const renderedWidth = 800 * scale;
+        const renderedHeight = 700 * scale;
+        const offsetX = (rect.width - renderedWidth) / 2;
+        const offsetY = (rect.height - renderedHeight) / 2;
+
+        const x = (event.clientX - rect.left - offsetX) / scale;
+        const y = (event.clientY - rect.top - offsetY) / scale;
+
+        // 캔버스 실제 그림 영역 밖(투명 여백)을 클릭했다면 무시합니다.
+        if (x < 0 || x > 800 || y < 0 || y > 700) return;
 
         const a = mul_n1, b = mul_n2;
-        
-        // 💡 [수정됨] 클릭 판정도 커진 마름모 크기와 동일하게 맞춰줍니다.
+        const dx = 34, dy = 28;
         const startX = 400;
-        const dx = 34; // 기존 33 -> 34
-        const dy = 28; // 기존 22 -> 28
-        const startY = 40 + (10 - Math.max(a, b)) * 20; 
+        const startY = 40 + (10 - Math.max(a, b)) * 20;
 
         const U = (x - startX) / dx;
         const V = (y - startY) / dy;

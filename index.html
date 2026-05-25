@@ -1372,11 +1372,12 @@
         mulHintState = { active: true, base: base, target: target, step: step, isADan: isADan };
         renderMulBoard();
 
-        const w1 = getKrNumStr(base) + ".wav";
+        // 💡 [수정됨] 한글 변환(getKrNumStr)을 없애고, 말씀해주신 '5.wav', '6.wav'처럼 숫자 그대로 파일명을 만듭니다.
+        const w1 = base + ".wav";
         const w2 = "곱하기.wav";
-        const w3 = getKrNumStr(step) + ".wav";
+        const w3 = step + ".wav";
         const w4 = "는.wav";
-        const w5 = getKrNumStr(base * step) + ".wav";
+        const w5 = (base * step) + ".wav";
         
         const sequence = [w1, w2, w3, w4, w5];
         
@@ -1398,8 +1399,8 @@
         
         const wordFile = sequence.shift();
         
-        // 기존 currentAudio를 활용하여 재생합니다.
-        const isNumberSound = /^([가-힣]+|\d+)(\[고유어\])?\.wav$/.test(wordFile);
+        // 💡 [수정됨] 정규식을 원래의 숫자 전용으로 되돌려, 숫자는 'sounds_number'로, '곱하기/는' 문자는 'sounds_basic'으로 완벽히 분리합니다.
+        const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(wordFile);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
         
         currentAudio.pause();
@@ -1409,7 +1410,6 @@
         };
         currentAudio.play().catch(e => {
             console.log("Sequence Audio error:", e);
-            // 소리 파일이 없거나 오류 발생 시 다음으로 넘어감
             setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 500);
         });
     }

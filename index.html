@@ -1164,12 +1164,19 @@
 
         const a = mul_n1;
         const b = mul_n2;
-        const startX = 400;
-        const startY = 30 + (10 - Math.max(a, b)) * 15;
-        const dx = 33;
-        const dy = 22;
-        const R = (Math.hypot(dx, dy) / 2) * 0.9;
         
+        // 💡 [수정됨] 마름모가 캔버스를 꽉 채우도록 가로(dx)와 세로(dy) 크기를 펌핑했습니다.
+        const startX = 400;
+        const dx = 34; // 기존 33 -> 34 (약간 넓힘)
+        const dy = 28; // 기존 22 -> 28 (세로를 대폭 늘려서 찌그러짐 완벽 해소!)
+        
+        // 💡 [수정됨] 커진 마름모에 맞춰 중앙 정렬이 잘 되도록 Y축 시작 높이를 조절했습니다.
+        const startY = 40 + (10 - Math.max(a, b)) * 20; 
+        
+        const R = (Math.hypot(dx, dy) / 2) * 0.9;
+        const leftStartRad = Math.atan2(dy, dx); 
+        const rightStartRad = Math.atan2(-dy, dx);
+
         const colorA = mulColors[a] || '#B0C4DE';
         const colorB = mulColors[b] || '#B0C4DE';
 
@@ -1190,7 +1197,6 @@
                 let isFilled = mulCellStates[key];
                 let fillColor = isFilled ? '#B0C4DE' : 'white';
 
-                // 💡 [수정됨] 힌트 재생 중 눈에 보이는 색상만 임시로 바꾸고 실제 상태(mulCellStates)는 변경하지 않음
                 if (mulHintState.active) {
                     const hColor = mulColors[mulHintState.base] || '#B0C4DE';
                     if (mulHintState.isADan) {
@@ -1214,7 +1220,6 @@
                 arcColor = mulColors[mulHintState.step] || '#B0C4DE';
             }
             ctx.beginPath();
-            // 💡 [수정됨] 왼쪽 반원이 바깥쪽(왼쪽)으로 볼록하게 나오도록 각도 수정
             ctx.arc(cx, cy, R, Math.atan2(-dy, dx), Math.atan2(dy, -dx), true);
             ctx.fillStyle = arcColor; ctx.fill();
             ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
@@ -1229,7 +1234,6 @@
                 arcColor = mulColors[mulHintState.step] || '#B0C4DE';
             }
             ctx.beginPath();
-            // 💡 [수정됨] 오른쪽 반원이 바깥쪽(오른쪽)으로 볼록하게 나오도록 각도 수정
             ctx.arc(cx, cy, R, Math.atan2(-dy, -dx), Math.atan2(dy, dx), false);
             ctx.fillStyle = arcColor; ctx.fill();
             ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
@@ -1274,7 +1278,8 @@
             ctx.fillStyle = 'black';
             ctx.font = 'bold 40px "Malgun Gothic", sans-serif';
             ctx.textAlign = "center";
-            ctx.fillText(hintFormula, 400, 520);
+            // 💡 [수정됨] 마름모가 커졌으므로 힌트 텍스트도 가장 아래쪽 여백(650)으로 안전하게 내렸습니다.
+            ctx.fillText(hintFormula, 400, 650);
             ctx.textAlign = "left"; 
         }
     }
@@ -1284,16 +1289,18 @@
         const canvas = document.getElementById('mul-canvas');
         const rect = canvas.getBoundingClientRect();
         
-        // 💡 캔버스 해상도가 다시 700으로 복구되었으므로 scaleY를 700으로 맞춥니다.
         const scaleX = 800 / rect.width;
         const scaleY = 700 / rect.height; 
         const x = (event.clientX - rect.left) * scaleX;
         const y = (event.clientY - rect.top) * scaleY;
 
         const a = mul_n1, b = mul_n2;
-        const dx = 33, dy = 22;
+        
+        // 💡 [수정됨] 클릭 판정도 커진 마름모 크기와 동일하게 맞춰줍니다.
         const startX = 400;
-        const startY = 30 + (10 - Math.max(a, b)) * 15;
+        const dx = 34; // 기존 33 -> 34
+        const dy = 28; // 기존 22 -> 28
+        const startY = 40 + (10 - Math.max(a, b)) * 20; 
 
         const U = (x - startX) / dx;
         const V = (y - startY) / dy;

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Let's Number!</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         /* ==========================================
            기본 설정 및 k 변수 초기화
@@ -283,10 +286,29 @@
         currentAudio.onended = () => { playSoundSequence(fileNames.slice(1)); };
     }
 
-    document.body.addEventListener('click', () => {
+    // ==========================================
+    // [BGM 자동 재생 및 전체 화면(Fullscreen) 실행 로직]
+    // ==========================================
+    function enableFullScreenAndBGM() {
+        // 1. BGM 재생
         const bgm = document.getElementById('bgm-player');
-        if (bgm.paused) bgm.play().catch(e => console.log("BGM error", e));
-    }, { once: true });
+        if (bgm && bgm.paused) {
+            bgm.play().catch(e => console.log("BGM error", e));
+        }
+
+        // 2. 전체 화면 실행 (이미 꽉 찬 화면이면 무시됨)
+        const docElm = document.documentElement;
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (docElm.requestFullscreen) {
+                docElm.requestFullscreen(); // 표준 브라우저 (크롬, 안드로이드 등)
+            } else if (docElm.webkitRequestFullScreen) {
+                docElm.webkitRequestFullScreen(); // 사파리 호환용
+            }
+        }
+    }
+
+    // 💡 { once: true }를 없애서, 실수로 전체 화면을 끄더라도 화면을 다시 터치하면 꽉 찬 화면으로 돌아가게 만듭니다.
+    document.body.addEventListener('click', enableFullScreenAndBGM);
 
     // 💡 애니메이션 세션을 관리하기 위한 글로벌 변수
     let currentSessionId = 0; 

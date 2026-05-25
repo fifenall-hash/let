@@ -1490,11 +1490,9 @@
         isAnswered = false;
         isClockHintActive = false;
 
-        // 시간(1~12), 분(0~55, 5분 단위)
         clock_h = Math.floor(Math.random() * 12) + 1;
         clock_m = Math.floor(Math.random() * 12) * 5; 
 
-        // UI 규격은 '더하기/빼기/곱하기'와 100% 동일하게 유지
         document.getElementById('game-area').innerHTML = `
             <style>
                 .clock-input::-webkit-outer-spin-button,
@@ -1522,7 +1520,7 @@
                     </div>
                     
                     <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;"></canvas>
+                        <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
                     </div>
                     
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">

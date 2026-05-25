@@ -595,7 +595,7 @@
                     <!-- 수식 및 입력 영역 -->
                     <div style="height: calc(var(--k) * 2); min-height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2); box-sizing: border-box;">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
-                        <input type="number" id="add-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkAdditionAnswer()">
+                        <input type="text" inputmode="numeric" pattern="\d*" id="add-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkAdditionAnswer()">
                         <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
                     </div>
                 </div>
@@ -899,7 +899,7 @@
                     <!-- 수식 및 입력 영역 -->
                     <div style="height: calc(var(--k) * 2); min-height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2); box-sizing: border-box;">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${sub_n1} - ${sub_n2} = </div>
-                        <input type="number" id="sub-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkSubtractionAnswer()">
+                        <input type="text" inputmode="numeric" pattern="\d*" id="sub-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkSubtractionAnswer()">
                         <button class="submit-btn" onclick="checkSubtractionAnswer()">확인</button>
                     </div>
                 </div>
@@ -1173,8 +1173,7 @@
                     
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
-                        <input type="number" id="mul-input" oninput="if(this.value.length > 3) this.value = this.value.slice(0, 3);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkMultiplicationAnswer()">
-                        <button class="submit-btn" onclick="checkMultiplicationAnswer()">확인</button>
+                        <input type="text" inputmode="numeric" pattern="\d*" id="mul-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 3);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkMultiplicationAnswer()">
                     </div>
                 </div>
             </div>
@@ -1548,11 +1547,10 @@
                     </div>
                     
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
-                        <input type="number" id="clock-h-input" class="clock-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080;" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') document.getElementById('clock-m-input').focus()">
+                        <input type="text" inputmode="numeric" pattern="\d*" id="clock-h-input" class="clock-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080;" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') document.getElementById('clock-m-input').focus()">
                         <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
                         
-                        <input type="number" id="clock-m-input" class="clock-input" oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkClockAnswer()">
-                        <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
+                        <input type="text" inputmode="numeric" pattern="\d*" id="clock-m-input" class="clock-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkClockAnswer()">
                         
                         <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
                     </div>

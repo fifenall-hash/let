@@ -194,6 +194,17 @@
     </audio>
 
 <script>
+    // ==========================================
+    // [💡 서비스 워커 등록 (오프라인 작동 지원)]
+    // ==========================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('서비스 워커가 성공적으로 등록되었습니다.', reg.scope))
+                .catch(err => console.log('서비스 워커 등록 실패:', err));
+        });
+    }
+    
     function calculateLayout() {
         const availableWidth = window.innerWidth;
         const availableHeight = window.innerHeight;

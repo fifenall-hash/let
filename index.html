@@ -365,7 +365,7 @@
     }
 
     function generateNumpadHTML(submitFuncName) {
-        const btnStyle = `width: calc(var(--k)*0.95); height: calc(var(--k)*1.1); font-size: calc(var(--k)*0.45); font-weight: bold; background-color: #f0f0f0; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.15); cursor: pointer; display: flex; justify-content: center; align-items: center; user-select: none; touch-action: manipulation;`;
+        const btnStyle = `width: calc(var(--k)*0.665); height: calc(var(--k)*0.77); font-size: calc(var(--k)*0.315); font-weight: bold; background-color: #f0f0f0; border: calc(var(--k)*0.035) solid #ccc; border-radius: calc(var(--k)*0.1); cursor: pointer; display: flex; justify-content: center; align-items: center; user-select: none; touch-action: manipulation;`;
         
         // 0~9 버튼과 지우기 버튼 생성
         const buttons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => 
@@ -373,7 +373,7 @@
         ).join('');
         
         return `
-            <div style="display: flex; gap: calc(var(--k)*0.1); justify-content: center; align-items: center; margin-top: calc(var(--k)*0.15); width: 100%;">
+            <div style="display: flex; gap: calc(var(--k)*0.07); justify-content: center; align-items: center; margin-top: calc(var(--k)*0.1); width: 100%;">
                 ${buttons}
                 <button style="${btnStyle}; background-color: #ffcccc;" onclick="handleNumpadClick('back')">←</button>
             </div>

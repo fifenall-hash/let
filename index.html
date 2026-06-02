@@ -237,7 +237,7 @@
     let leftItems = [];              // 왼쪽 배치 아이템 리스트 (DOM 요소)
     let rightItems = [];             // 오른쪽 배치 아이템 리스트 (DOM 요소)
     let isAnimating = false;         // 애니메이션 재생 상태
-    let isHardMode = false;          // 하드모드(힌트 비활성화) 상태
+    let isHardMode = false;          // 하드모드(힌트 비활성화) 상태 공통 변수
     let hiddenCarryMode = false;     // 히든 커맨드(99) 올림 모드 상태
     let isAnswered = false;          // 정답 제출 여부
 
@@ -301,31 +301,27 @@
     // [BGM 자동 재생 및 전체 화면(Fullscreen) 실행 로직]
     // ==========================================
     function enableFullScreenAndBGM() {
-        // 1. BGM 재생
         const bgm = document.getElementById('bgm-player');
         if (bgm && bgm.paused) {
             bgm.play().catch(e => console.log("BGM error", e));
         }
 
-        // 2. 전체 화면 실행 (이미 꽉 찬 화면이면 무시됨)
         const docElm = document.documentElement;
         if (!document.fullscreenElement && !document.webkitFullscreenElement) {
             if (docElm.requestFullscreen) {
-                docElm.requestFullscreen(); // 표준 브라우저 (크롬, 안드로이드 등)
+                docElm.requestFullscreen();
             } else if (docElm.webkitRequestFullScreen) {
-                docElm.webkitRequestFullScreen(); // 사파리 호환용
+                docElm.webkitRequestFullScreen(); 
             }
         }
     }
 
-    // 💡 { once: true }를 없애서, 실수로 전체 화면을 끄더라도 화면을 다시 터치하면 꽉 찬 화면으로 돌아가게 만듭니다.
     document.body.addEventListener('click', enableFullScreenAndBGM);
 
-    // 💡 애니메이션 세션을 관리하기 위한 글로벌 변수
     let currentSessionId = 0; 
 
     function startGame(gameName) {
-        currentSessionId++; // 메뉴를 누를 때마다 세션 ID를 증가시켜 기존 타이머들을 무효화합니다.
+        currentSessionId++; 
         
         currentGame = gameName;
         document.getElementById('banner-frame').style.display = 'grid';
@@ -353,13 +349,26 @@
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
+        
+        // 💡 하드 모드 적용 (마지막 3문제)
+        isHardMode = solvedItems['숫자 세기 놀이'].length >= (items.length - 3);
+        if (isHardMode) {
+            soundEnabled = false;
+            showNumberStatus = false;
+        } else {
+            soundEnabled = true;
+            showNumberStatus = true;
+        }
 
         document.getElementById('game-area').innerHTML = `
-            <div class="options-bar">
-                <label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
-                <label><input type="radio" name="sndType" value="고유어" checked onchange="soundType = this.value"> 고유어</label>
-                <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
-                <label><input type="checkbox" checked onchange="showNumberStatus = this.checked; updateCountDisplay();"> 수 상태 보이기</label>
+            <div class="options-bar" ${isHardMode ? 'style="justify-content: center;"' : ''}>
+                ${isHardMode 
+                    ? `<div style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: red;">💡 이제 소리와 숫자 힌트 없이 세어보세요!</div>` 
+                    : `<label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
+                       <label><input type="radio" name="sndType" value="고유어" checked onchange="soundType = this.value"> 고유어</label>
+                       <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
+                       <label><input type="checkbox" checked onchange="showNumberStatus = this.checked; updateCountDisplay();"> 수 상태 보이기</label>`
+                }
             </div>
             <div class="question-text" onclick="replayQuestion()">${targetItem} ${targetNumber}개 줄래?</div>
             <div id="drop-zone" style="background-image: url('images/숫자세기.png'); background-size: contain; background-position: center bottom; background-repeat: no-repeat; border: none;"></div>
@@ -482,7 +491,13 @@
 
             solvedItems['숫자 세기 놀이'].push(targetItem);
             updateBanner();
-            setTimeout(initCountingGame, 2000);
+            
+            if (solvedItems['숫자 세기 놀이'].length === items.length) {
+                playSound('다했어고마워.wav');
+                setTimeout(() => showCompletionScreen('숫자 세기 놀이'), 2000);
+            } else {
+                setTimeout(initCountingGame, 2000);
+            }
         } else {
             playSound('다시해보자.wav');
             document.querySelector('.question-text').innerText = "다시 해보자.";
@@ -506,21 +521,42 @@
         });
     }
 
-    // [수정됨] 숫자 세기 놀이 완료 시, 텍스트 대신 완료 이미지를 표시합니다.
+    // 💡 모든 메뉴 완료 점검 및 개별 완료 화면 렌더링 로직
     function showCompletionScreen(gameName) {
-        if (gameName === '숫자 세기 놀이') {
-            document.getElementById('game-area').innerHTML = `
-                <img src="images/숫자세기완료.png" style="width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;" alt="완료">
-            `;
-        } else {
-            document.getElementById('game-area').innerHTML = `
-                <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2);">다 했어. 고마워!</h1>
-                <p style="font-size: calc(var(--k) * 0.6); color: blue; font-weight: bold; margin-top: 0;">🎉 ${gameName} 마스터! 🎉</p>
-            `;
+        document.querySelectorAll('.menu-btn').forEach(btn => { 
+            if(btn.innerText.includes(gameName)) btn.classList.add('completed'); 
+        });
+
+        const allCompleted = Object.values(solvedItems).every(arr => arr.length === items.length);
+
+        if (allCompleted) {
+            // 모든 메뉴를 완료했을 때 화면 전체에 안녕.png 출력
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.backgroundColor = 'white'; 
+            overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.innerHTML = `<img src="images/안녕.png" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="모두 완료">`;
+            document.body.appendChild(overlay);
+            
+            playSound('다했어고마워.wav');
+            return;
         }
+
+        const imgSrc = gameName === '숫자 세기 놀이' ? 'images/숫자세기완료.png' : 'images/셈놀이완료.png';
+
+        document.getElementById('game-area').innerHTML = `
+            <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2); margin-top: 0;">다했어. 고마워!</h1>
+            <img src="${imgSrc}" style="width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;" alt="완료">
+        `;
         
         playSound('다했어고마워.wav');
-        document.querySelectorAll('.menu-btn').forEach(btn => { if(btn.innerText.includes(gameName)) btn.classList.add('completed'); });
     }
 
     // =========================================================================
@@ -536,10 +572,8 @@
         leftItems = [];
         rightItems = [];
         
-        // 하드 모드 체크 (남은 아이템이 3개 이하일 때)
         isHardMode = solvedItems['더하기 놀이'].length >= (items.length - 3);
 
-        // 히든 모드(올림 문제) 여부에 따른 출제 로직
         let validPairs = [];
         if (hiddenCarryMode) {
             for (let a = 1; a < 10; a++) {
@@ -559,17 +593,11 @@
         add_n1 = pair[0];
         add_n2 = pair[1];
 
-        // 더하기 놀이용 화면 UI 그리기
         document.getElementById('game-area').innerHTML = `
             <style>
                 #add-input::-webkit-outer-spin-button,
-                #add-input::-webkit-inner-spin-button {
-                    -webkit-appearance: none;
-                    margin: 0;
-                }
-                #add-input {
-                    -moz-appearance: textfield; 
-                }
+                #add-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                #add-input { -moz-appearance: textfield; }
             </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
                 
@@ -627,9 +655,9 @@
     }
 
     function rearrangeAdditionItems() {
-        const startX1 = 0.5; // 왼쪽 그룹 X 시작 위치
-        const startX2 = 4.2; // 오른쪽 그룹 X 시작 위치
-        const startY = 0.5;  // Y 시작 위치
+        const startX1 = 0.5; 
+        const startX2 = 4.2; 
+        const startY = 0.5;  
 
         leftItems.forEach((img, i) => {
             const col = Math.floor(i / 5);
@@ -663,7 +691,6 @@
             const border = document.createElement('div');
             border.className = 'add-border red-border'; 
             
-            // 4. 좌표 미세 조정: 왼쪽 여백(0.2 -> 0.12)을 줄여 상자를 오른쪽으로 밀고, 너비와 높이를 타이트하게 조정합니다.
             border.style.left = `calc(var(--k) * ${x - 0.12})`;
             border.style.top = `calc(var(--k) * ${y - 0.15})`;
             border.style.width = `calc(var(--k) * 1.55)`;
@@ -743,11 +770,10 @@
             img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
         });
 
-        // 💡 힌트를 시작할 때의 세션 ID를 기억합니다.
         const expectedSessionId = currentSessionId; 
 
         setTimeout(() => {
-            if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+            if (expectedSessionId !== currentSessionId) return;
             if (isAnswered) return;
             
             let previewLeft = lCount + (isLeftTarget ? moveAmt : -moveAmt);
@@ -755,7 +781,7 @@
             updateAdditionBorders(previewLeft, previewRight);
 
             setTimeout(() => {
-                if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+                if (expectedSessionId !== currentSessionId) return;
                 if (isAnswered) return;
                 
                 updateAdditionBorders(); 
@@ -766,7 +792,7 @@
                 });
 
                 setTimeout(() => {
-                    if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+                    if (expectedSessionId !== currentSessionId) return; 
                     
                     isAnimating = false;
                     evaluateHintButtonState();
@@ -780,11 +806,9 @@
         const inputEl = document.getElementById('add-input');
         const userInput = inputEl.value.trim();
 
-        // 히든 커맨드 '99' 입력 처리
         if (userInput === '99') {
             hiddenCarryMode = !hiddenCarryMode; 
             
-            // 💡 [수정됨] 기존 플레이어와 충돌하지 않도록, 독립적인 미니 플레이어를 생성해 즉시 재생합니다.
             const beepAudio = new Audio('sounds_basic/beep.wav');
             beepAudio.play().catch(e => console.log("Beep error:", e));
             
@@ -851,10 +875,8 @@
         subLeftItems = [];
         subRightItems = [];
         
-        // 하드 모드 체크 (남은 아이템이 3개 이하일 때)
         isHardMode = solvedItems['빼기 놀이'].length >= (items.length - 3);
 
-        // 빼기 놀이는 큰 수에서 작은 수를 빼도록 설정
         let n_a = Math.floor(Math.random() * 20) + 1;
         let n_b = Math.floor(Math.random() * 20) + 1;
         sub_n1 = Math.max(n_a, n_b);
@@ -903,7 +925,6 @@
 
         const canvas = document.getElementById('sub-canvas');
         
-        // 아이템 생성 함수
         const createItem = (arr, isInverted) => {
             let img = document.createElement('img');
             img.src = `images/${targetItem}.png`;
@@ -924,9 +945,9 @@
     }
 
     function rearrangeSubItems() {
-        const startX1 = 0.5; // 왼쪽 그룹 X 시작 위치
-        const startX2 = 4.2; // 오른쪽 그룹 X 시작 위치
-        const startY = 0.5;  // Y 시작 위치
+        const startX1 = 0.5; 
+        const startX2 = 4.2; 
+        const startY = 0.5;  
 
         subLeftItems.forEach((img, i) => {
             const col = Math.floor(i / 5);
@@ -1023,11 +1044,10 @@
             rItem.style.top = lItem.style.top;
         });
 
-        // 💡 힌트를 시작할 때의 세션 ID를 기억합니다.
         const expectedSessionId = currentSessionId;
 
         setTimeout(() => {
-            if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+            if (expectedSessionId !== currentSessionId) return; 
             if (isAnswered) return;
             
             subRightItems.forEach(rItem => rItem.style.opacity = "0");
@@ -1037,14 +1057,14 @@
             updateSubBorders(previewLeftCount, 0);
 
             setTimeout(() => {
-                if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+                if (expectedSessionId !== currentSessionId) return; 
                 if (isAnswered) return;
                 
                 subRightItems.forEach(rItem => rItem.style.opacity = "1");
                 leftTargets.forEach(lItem => lItem.style.opacity = "1");
                 
                 setTimeout(() => {
-                    if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+                    if (expectedSessionId !== currentSessionId) return; 
                     if (isAnswered) return;
                     
                     subRightItems.forEach(rItem => {
@@ -1053,7 +1073,7 @@
                     });
 
                     setTimeout(() => {
-                        if (expectedSessionId !== currentSessionId) return; // 메뉴가 변경되었다면 즉시 중지
+                        if (expectedSessionId !== currentSessionId) return; 
                         if (isAnswered) return;
                         
                         updateSubBorders(); 
@@ -1130,6 +1150,9 @@
 
         mul_n1 = Math.floor(Math.random() * 10) + 1;
         mul_n2 = Math.floor(Math.random() * 10) + 1;
+        
+        // 💡 하드 모드 적용 (마지막 3문제)
+        isHardMode = solvedItems['곱하기 놀이'].length >= (items.length - 3);
 
         mulImgObj = new Image();
         mulImgObj.src = `images/${targetItem}.png`;
@@ -1153,12 +1176,15 @@
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888; line-height: 1.2;">
-                            💡 마름모 칸을 클릭하거나<br>'단 실행'을 눌러보세요!
+                        <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
+                            ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 마름모 칸을 클릭하거나<br>'단 실행'을 눌러보세요!"}
                         </div>
                         <div style="display: flex; align-items: center; gap: calc(var(--k) * 0.1);">
-                            <button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
-                            <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>
+                            ${isHardMode 
+                                ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` 
+                                : `<button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
+                                   <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>`
+                            }
                         </div>
                     </div>
                     
@@ -1187,12 +1213,10 @@
         const a = mul_n1;
         const b = mul_n2;
         
-        // 💡 [수정됨] 마름모가 캔버스를 꽉 채우도록 가로(dx)와 세로(dy) 크기를 펌핑했습니다.
         const startX = 400;
-        const dx = 34; // 기존 33 -> 34 (약간 넓힘)
-        const dy = 28; // 기존 22 -> 28 (세로를 대폭 늘려서 찌그러짐 완벽 해소!)
+        const dx = 34; 
+        const dy = 28; 
         
-        // 💡 [수정됨] 커진 마름모에 맞춰 중앙 정렬이 잘 되도록 Y축 시작 높이를 조절했습니다.
         const startY = 40 + (10 - Math.max(a, b)) * 20; 
         
         const R = (Math.hypot(dx, dy) / 2) * 0.9;
@@ -1300,7 +1324,6 @@
             ctx.fillStyle = 'black';
             ctx.font = 'bold 40px "Malgun Gothic", sans-serif';
             ctx.textAlign = "center";
-            // 💡 [수정됨] 마름모가 커졌으므로 힌트 텍스트도 가장 아래쪽 여백(650)으로 안전하게 내렸습니다.
             ctx.fillText(hintFormula, 400, 650);
             ctx.textAlign = "left"; 
         }
@@ -1311,7 +1334,6 @@
         const canvas = document.getElementById('mul-canvas');
         const rect = canvas.getBoundingClientRect();
         
-        // 💡 [수정됨] object-fit: contain 에 의해 생성된 투명 여백(레터박스)을 계산하여 정확한 클릭 위치를 추적하는 공식입니다.
         const scale = Math.min(rect.width / 800, rect.height / 700);
         const renderedWidth = 800 * scale;
         const renderedHeight = 700 * scale;
@@ -1321,7 +1343,6 @@
         const x = (event.clientX - rect.left - offsetX) / scale;
         const y = (event.clientY - rect.top - offsetY) / scale;
 
-        // 캔버스 실제 그림 영역 밖(투명 여백)을 클릭했다면 무시합니다.
         if (x < 0 || x > 800 || y < 0 || y > 700) return;
 
         const a = mul_n1, b = mul_n2;
@@ -1399,7 +1420,6 @@
         mulHintState = { active: true, base: base, target: target, step: step, isADan: isADan };
         renderMulBoard();
 
-        // 💡 [수정됨] 한글 변환(getKrNumStr)을 없애고, 말씀해주신 '5.wav', '6.wav'처럼 숫자 그대로 파일명을 만듭니다.
         const w1 = base + ".wav";
         const w2 = "곱하기.wav";
         const w3 = step + ".wav";
@@ -1426,7 +1446,6 @@
         
         const wordFile = sequence.shift();
         
-        // 💡 [수정됨] 정규식을 원래의 숫자 전용으로 되돌려, 숫자는 'sounds_number'로, '곱하기/는' 문자는 'sounds_basic'으로 완벽히 분리합니다.
         const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(wordFile);
         const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
         
@@ -1446,7 +1465,6 @@
         const inputEl = document.getElementById('mul-input');
         const userInput = inputEl.value.trim();
 
-        // 💡 [히든 커맨드] 99 입력 시 beep 소리와 함께 문제 리셋
         if (userInput === '99') {
             const beepAudio = new Audio('sounds_basic/beep.wav');
             beepAudio.play().catch(e => console.log("Beep error:", e));
@@ -1511,6 +1529,9 @@
         clock_h = Math.floor(Math.random() * 12) + 1;
         clock_m = Math.floor(Math.random() * 12) * 5; 
 
+        // 💡 하드 모드 적용 (마지막 3문제)
+        isHardMode = solvedItems['시계 보기 놀이'].length >= (items.length - 3);
+
         document.getElementById('game-area').innerHTML = `
             <style>
                 .clock-input::-webkit-outer-spin-button,
@@ -1529,11 +1550,14 @@
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="clock-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: #888; line-height: 1.2;">
-                            💡 시계를 보고 몇 시 몇 분인지 적어보세요!
+                        <div id="clock-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
+                            ${isHardMode ? "💡 이제 힌트 없이 몇 시 몇 분인지 적어보세요!" : "💡 시계를 보고 몇 시 몇 분인지 적어보세요!"}
                         </div>
                         <div style="display: flex; align-items: center;">
-                            <button id="clock-hint-btn" onclick="showClockHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>
+                            ${isHardMode
+                                ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>`
+                                : `<button id="clock-hint-btn" onclick="showClockHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
+                            }
                         </div>
                     </div>
                     
@@ -1546,6 +1570,7 @@
                         <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
                         
                         <input type="text" inputmode="numeric" pattern="\\d*" id="clock-m-input" class="clock-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkClockAnswer()">
+                        <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
                         
                         <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
                     </div>
@@ -1564,8 +1589,8 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         const cx = 400;
-        const cy = 350; // 파이썬의 260보다 화면 중앙에 오도록 Y좌표 미세 조정
-        const r = 240;  // 캔버스 크기에 맞게 시계 크기 확대
+        const cy = 350; 
+        const r = 240;  
 
         // 1. 시계 바탕 원
         ctx.beginPath();
@@ -1662,11 +1687,11 @@
         // 힌트 모드로 캔버스 다시 그리기 (정답만 보임)
         renderClockBoard();
         
-        currentSessionId++; // 세션 분리
+        currentSessionId++; 
         const session = currentSessionId;
         
         setTimeout(() => {
-            if (session !== currentSessionId) return; // 메뉴 바뀌면 취소
+            if (session !== currentSessionId) return; 
             if (isAnswered) return;
             
             isClockHintActive = false;
@@ -1685,7 +1710,6 @@
         const inputH = document.getElementById('clock-h-input').value.trim();
         const inputM = document.getElementById('clock-m-input').value.trim();
 
-        // 히든 커맨드: 99 입력 시 리셋
         if (inputH === '99' || inputM === '99') {
             const beepAudio = new Audio('sounds_basic/beep.wav');
             beepAudio.play().catch(e => console.log("Beep error:", e));

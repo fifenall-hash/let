@@ -365,21 +365,19 @@
     }
 
     function generateNumpadHTML(submitFuncName) {
-        // 원본 크기 유지 (scale 속성으로 전체를 한 번에 줄입니다)
-        const btnStyle = `width: calc(var(--k)*0.95); height: calc(var(--k)*1.1); font-size: calc(var(--k)*0.45); font-weight: bold; background-color: #f0f0f0; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.15); cursor: pointer; display: flex; justify-content: center; align-items: center; user-select: none; touch-action: manipulation;`;
+        // 기존 버튼 스타일 (레이어 느낌을 주기 위해 약간의 그림자(box-shadow)를 추가했습니다)
+        const btnStyle = `width: calc(var(--k)*0.95); height: calc(var(--k)*1.1); font-size: calc(var(--k)*0.45); font-weight: bold; background-color: #f0f0f0; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.15); cursor: pointer; display: flex; justify-content: center; align-items: center; user-select: none; touch-action: manipulation; box-shadow: 0 calc(var(--k)*0.03) calc(var(--k)*0.05) rgba(0,0,0,0.2);`;
         
         // 0~9 버튼과 지우기 버튼 생성
         const buttons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => 
             `<button style="${btnStyle}" onclick="handleNumpadClick('${n}')">${n}</button>`
         ).join('');
         
-        // transform: scale(0.7)을 적용하여 정확히 70% 크기로 축소하고, 축소되면서 남는 하단 여백을 없앱니다.
+        // 💡 핵심 변경 사항: position: absolute를 추가하여 기존 레이아웃(캔버스)을 밀어내지 않고 공중에 띄웁니다!
         return `
-            <div style="width: 100%; display: flex; justify-content: center; align-items: flex-start; margin-top: calc(var(--k)*0.15);">
-                <div style="display: flex; gap: calc(var(--k)*0.1); transform: scale(0.7); transform-origin: top center; margin-bottom: calc(var(--k)*-0.35);">
-                    ${buttons}
-                    <button style="${btnStyle}; background-color: #ffcccc;" onclick="handleNumpadClick('back')">←</button>
-                </div>
+            <div style="position: absolute; bottom: calc(var(--k) * 0.1); left: 50%; transform: translateX(-50%) scale(0.7); transform-origin: bottom center; z-index: 100; display: flex; gap: calc(var(--k)*0.1); width: max-content;">
+                ${buttons}
+                <button style="${btnStyle}; background-color: #ffcccc;" onclick="handleNumpadClick('back')">←</button>
             </div>
         `;
     }

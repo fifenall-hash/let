@@ -363,14 +363,9 @@
 
     function getCustomKeypadHTML() {
         return `
-        <div style="position: absolute; bottom: calc(var(--k) * 2.2); left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95); border: calc(var(--k)*0.05) solid #aaa; border-radius: calc(var(--k)*0.2); padding: calc(var(--k)*0.15); display: flex; flex-direction: column; gap: calc(var(--k)*0.1); z-index: 100; box-shadow: 0 calc(var(--k)*0.1) calc(var(--k)*0.2) rgba(0,0,0,0.3);">
-            <div style="display: flex; gap: calc(var(--k)*0.1); justify-content: center;">
-                ${[1,2,3,4,5].map(n => `<button style="width: calc(var(--k)*1.1); height: calc(var(--k)*1.1); font-size: calc(var(--k)*0.5); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #fff; cursor:pointer; color: #333;" onclick="handleKeypadInput('${n}')">${n}</button>`).join('')}
-            </div>
-            <div style="display: flex; gap: calc(var(--k)*0.1); justify-content: center;">
-                ${[6,7,8,9,0].map(n => `<button style="width: calc(var(--k)*1.1); height: calc(var(--k)*1.1); font-size: calc(var(--k)*0.5); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #fff; cursor:pointer; color: #333;" onclick="handleKeypadInput('${n}')">${n}</button>`).join('')}
-                <button style="width: calc(var(--k)*1.1); height: calc(var(--k)*1.1); font-size: calc(var(--k)*0.5); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #ffcccc; cursor:pointer; color: #333;" onclick="handleKeypadInput('back')">←</button>
-            </div>
+        <div style="display: flex; gap: calc(var(--k)*0.08); justify-content: center; background: rgba(255, 255, 255, 0.8); border: calc(var(--k)*0.05) solid #aaa; border-radius: calc(var(--k)*0.15); padding: calc(var(--k)*0.1); box-shadow: 0 calc(var(--k)*0.05) calc(var(--k)*0.1) rgba(0,0,0,0.2);">
+            ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button style="width: calc(var(--k)*0.55); height: calc(var(--k)*0.55); font-size: calc(var(--k)*0.3); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #fff; cursor:pointer; color: #333; padding: 0; display: flex; justify-content: center; align-items: center;" onclick="handleKeypadInput('${n}')">${n}</button>`).join('')}
+            <button style="width: calc(var(--k)*0.55); height: calc(var(--k)*0.55); font-size: calc(var(--k)*0.3); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #ffcccc; cursor:pointer; color: #333; padding: 0; display: flex; justify-content: center; align-items: center;" onclick="handleKeypadInput('back')">←</button>
         </div>`;
     }
 
@@ -685,12 +680,14 @@
                         <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">+</div>
                     </div>
                     
-                    <div style="height: calc(var(--k) * 2); min-height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2); box-sizing: border-box;">
-                        <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
-                        <input type="text" id="add-input" class="game-input" readonly onclick="setActiveInput('add-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
-                        <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
+                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
+                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
+                            <input type="text" id="add-input" class="game-input" readonly onclick="setActiveInput('add-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
+                            <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
+                        </div>
+                        ${getCustomKeypadHTML()}
                     </div>
-                    ${getCustomKeypadHTML()}
                 </div>
             </div>
         `;
@@ -967,12 +964,14 @@
                         <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">-</div>
                     </div>
                     
-                    <div style="height: calc(var(--k) * 2); min-height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2); box-sizing: border-box;">
-                        <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${sub_n1} - ${sub_n2} = </div>
-                        <input type="text" id="sub-input" class="game-input" readonly onclick="setActiveInput('sub-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
-                        <button class="submit-btn" onclick="checkSubtractionAnswer()">확인</button>
+                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
+                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${sub_n1} - ${sub_n2} = </div>
+                            <input type="text" id="sub-input" class="game-input" readonly onclick="setActiveInput('sub-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
+                            <button class="submit-btn" onclick="checkSubtractionAnswer()">확인</button>
+                        </div>
+                        ${getCustomKeypadHTML()}
                     </div>
-                    ${getCustomKeypadHTML()}
                 </div>
             </div>
         `;
@@ -1250,12 +1249,14 @@
                         <canvas id="mul-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;" onclick="onMulCanvasClick(event)"></canvas>
                     </div>
                     
-                    <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
-                        <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
-                        <input type="text" id="mul-input" class="game-input" readonly onclick="setActiveInput('mul-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
-                        <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkMultiplicationAnswer()">확인</button>
+                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
+                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
+                            <input type="text" id="mul-input" class="game-input" readonly onclick="setActiveInput('mul-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
+                            <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkMultiplicationAnswer()">확인</button>
+                        </div>
+                        ${getCustomKeypadHTML()}
                     </div>
-                    ${getCustomKeypadHTML()}
                 </div>
             </div>
         `;
@@ -1629,16 +1630,18 @@
                         <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
                     </div>
                     
-                    <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
-                        <input type="text" id="clock-h-input" class="game-input" readonly onclick="setActiveInput('clock-h-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080; text-align: center; outline: none; cursor: pointer;">
-                        <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
-                        
-                        <input type="text" id="clock-m-input" class="game-input" readonly onclick="setActiveInput('clock-m-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2); text-align: center; outline: none; cursor: pointer;">
-                        <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
-                        
-                        <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
+                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
+                            <input type="text" id="clock-h-input" class="game-input" readonly onclick="setActiveInput('clock-h-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080; text-align: center; outline: none; cursor: pointer;">
+                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
+                            
+                            <input type="text" id="clock-m-input" class="game-input" readonly onclick="setActiveInput('clock-m-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2); text-align: center; outline: none; cursor: pointer;">
+                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
+                            
+                            <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
+                        </div>
+                        ${getCustomKeypadHTML()}
                     </div>
-                    ${getCustomKeypadHTML()}
                 </div>
             </div>
         `;

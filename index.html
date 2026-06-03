@@ -349,6 +349,7 @@
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
+        isAnswered = false; // 연달아 클릭 방지용 초기화
         
         // 💡 하드 모드 적용 (마지막 3문제)
         isHardMode = solvedItems['숫자 세기 놀이'].length >= (items.length - 3);
@@ -477,11 +478,14 @@
     function replayQuestion() { playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]); }
 
     function checkCountingAnswer() {
+        if (isAnswered) return; // 연달아 클릭 방지
+        
         const dropZoneItems = document.querySelectorAll('.placed-item'); 
         let isCorrect = (dropZoneItems.length === targetNumber);
         
         if (isCorrect) {
-            playSound('고마워.wav');
+            isAnswered = true; // 정답 처리 상태로 잠금
+            
             const dropZone = document.getElementById('drop-zone');
             dropZone.style.backgroundImage = "url('images/숫자세기고마워.png')";
 
@@ -493,9 +497,14 @@
             updateBanner();
             
             if (solvedItems['숫자 세기 놀이'].length === items.length) {
-                playSound('다했어고마워.wav');
+                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
+                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+                } else {
+                    playSound('다했어고마워.wav');
+                }
                 setTimeout(() => showCompletionScreen('숫자 세기 놀이'), 2000);
             } else {
+                playSound('고마워.wav');
                 setTimeout(initCountingGame, 2000);
             }
         } else {
@@ -530,7 +539,6 @@
         const allCompleted = Object.values(solvedItems).every(arr => arr.length === items.length);
 
         if (allCompleted) {
-            // 모든 메뉴를 완료했을 때 화면 전체에 안녕.png 출력
             const overlay = document.createElement('div');
             overlay.style.position = 'fixed';
             overlay.style.top = '0';
@@ -544,19 +552,18 @@
             overlay.style.alignItems = 'center';
             overlay.innerHTML = `<img src="images/안녕.png" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="모두 완료">`;
             document.body.appendChild(overlay);
-            
-            playSound('다했어고마워.wav');
             return;
         }
 
         const imgSrc = gameName === '숫자 세기 놀이' ? 'images/숫자세기완료.png' : 'images/셈놀이완료.png';
+        const imgStyle = gameName === '숫자 세기 놀이' 
+            ? 'width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;'
+            : 'width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain;';
 
         document.getElementById('game-area').innerHTML = `
             <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2); margin-top: 0;">다했어. 고마워!</h1>
-            <img src="${imgSrc}" style="width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;" alt="완료">
+            <img src="${imgSrc}" style="${imgStyle}" alt="완료">
         `;
-        
-        playSound('다했어고마워.wav');
     }
 
     // =========================================================================
@@ -808,10 +815,8 @@
 
         if (userInput === '99') {
             hiddenCarryMode = !hiddenCarryMode; 
-            
             const beepAudio = new Audio('sounds_basic/beep.wav');
             beepAudio.play().catch(e => console.log("Beep error:", e));
-            
             inputEl.value = '';
             initAdditionGame();
             return;
@@ -832,7 +837,11 @@
             updateBanner();
 
             if (solvedItems['더하기 놀이'].length === items.length) {
-                playSound('다했어고마워.wav');
+                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
+                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+                } else {
+                    playSound('다했어고마워.wav');
+                }
                 setTimeout(() => showCompletionScreen('더하기 놀이'), 2000);
             } else {
                 playSound('고마워.wav');
@@ -847,18 +856,6 @@
             inputEl.focus();
             
             setTimeout(restoreAddQuestionText, 2000);
-        }
-    }
-
-    function restoreAddQuestionText() {
-        if (!isAnswered) {
-            const speech = document.getElementById('add-speech');
-            if(speech) speech.innerHTML = "모두 더해서<br>몇 개인지<br>알려줄래?";
-            
-            const charImg = document.getElementById('add-char');
-            if(charImg) charImg.src = 'images/셈놀이.png';
-            
-            playSound('모두더해서몇개인지알려줄래.wav');
         }
     }
 
@@ -1105,7 +1102,11 @@
             updateBanner();
 
             if (solvedItems['빼기 놀이'].length === items.length) {
-                playSound('다했어고마워.wav');
+                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
+                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+                } else {
+                    playSound('다했어고마워.wav');
+                }
                 setTimeout(() => showCompletionScreen('빼기 놀이'), 2000);
             } else {
                 playSound('고마워.wav');
@@ -1195,6 +1196,7 @@
                     <div style="height: calc(var(--k) * 2); display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                         <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
                         <input type="text" inputmode="numeric" pattern="\\d*" id="mul-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 3);" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1);" onkeydown="if(['e', 'E', '+', '-', '.'].includes(event.key)) event.preventDefault(); if(event.key==='Enter') checkMultiplicationAnswer()">
+                        <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkMultiplicationAnswer()">확인</button>
                     </div>
                 </div>
             </div>
@@ -1490,7 +1492,11 @@
             updateBanner();
 
             if (solvedItems['곱하기 놀이'].length === items.length) {
-                playSound('다했어고마워.wav');
+                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
+                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+                } else {
+                    playSound('다했어고마워.wav');
+                }
                 setTimeout(() => showCompletionScreen('곱하기 놀이'), 2000);
             } else {
                 playSound('고마워.wav');
@@ -1732,7 +1738,11 @@
             updateBanner();
 
             if (solvedItems['시계 보기 놀이'].length === items.length) {
-                playSound('다했어고마워.wav');
+                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
+                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+                } else {
+                    playSound('다했어고마워.wav');
+                }
                 setTimeout(() => showCompletionScreen('시계 보기 놀이'), 2000);
             } else {
                 playSound('고마워.wav');

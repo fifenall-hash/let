@@ -3,1847 +3,777 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Let's Number!</title>
+    <title>주식 커스텀 분석 차트 (연도별 세로선 적용)</title>
+    
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stock Analytics">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ==========================================
-           기본 설정 및 k 변수 초기화
-           ========================================== */
-        :root {
-            --k: 1px;
-        }
-
         body {
-            margin: 0; padding: 0;
-            background-color: #333; display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden;
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-            font-size: calc(var(--k) * 0.35); 
+            margin: 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
         }
-
-        #app-wrapper {
-            flex: 1; display: flex; justify-content: center; align-items: flex-start; 
-            background-color: #333; overflow: hidden; width: 100%;
+        .widget-container {
+            width: 100%;
+            max-width: 1200px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 15px;
+            box-sizing: border-box;
         }
-
-        #app-container {
-            width: calc(var(--k) * 16);
-            height: calc(var(--k) * 9);
-            background-color: #f5f5f5;
-            display: grid;
-            grid-template-columns: calc(var(--k) * 3.5) calc(var(--k) * 10.1) calc(var(--k) * 2.4);
-            overflow: hidden; box-sizing: border-box;
-            user-select: none; -webkit-user-select: none; touch-action: manipulation;
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
         }
-
-        /* ==========================================
-           좌측 메뉴 영역
-           ========================================== */
-        #menu-frame {
-            background-color: white; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            box-shadow: calc(var(--k) * 0.1) 0 calc(var(--k) * 0.3) rgba(0,0,0,0.1);
-            z-index: 10;
+        h1 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 22px;
         }
-
-        .menu-logo {
-            width: calc(var(--k) * 3.9325); margin-bottom: calc(var(--k) * 0.32);
-            object-fit: contain; 
+        p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 13px;
         }
-
-        .menu-btn {
-            width: calc(var(--k) * 2.8); padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
-            margin: calc(var(--k) * 0.15) 0; font-size: calc(var(--k) * 0.28); 
-            font-weight: bold; background-color: #e0e0e0; border: none;
-            border-radius: calc(var(--k) * 0.2); cursor: pointer;
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f1f2f6;
+            padding: 15px;
+            border-radius: 8px;
         }
-
-        .menu-btn.completed { background-color: #A0E8AF; color: black; }
-
-        /* ==========================================
-           중앙 게임 영역
-           ========================================== */
-        #game-area {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: calc(var(--k) * 0.5); box-sizing: border-box; position: relative;
-        }
-
-        .options-bar {
-            display: flex; gap: calc(var(--k) * 0.3); margin-bottom: 0;
-            align-items: center; font-weight: bold; font-size: calc(var(--k) * 0.135); 
-        }
-        .options-bar label { display: flex; align-items: center; cursor: pointer; }
-        .options-bar input[type="checkbox"], .options-bar input[type="radio"] {
-            width: calc(var(--k) * 0.16); height: calc(var(--k) * 0.16);
-            margin: 0 calc(var(--k) * 0.05) 0 0; cursor: pointer;
-        }
-
-        .question-text {
-            font-size: calc(var(--k) * 0.525); font-weight: bold;
-            margin-bottom: 0; text-align: center; cursor: pointer;
-        }
-
-        .items-tray {
-            display: flex; gap: calc(var(--k) * 0.2); margin-top: 0;
-            background: rgba(255, 255, 255, 0.7); padding: calc(var(--k) * 0.2); border-radius: calc(var(--k) * 0.3);
-        }
-
-        .draggable-item {
-            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
-            cursor: pointer; transition: transform 0.1s;
-            object-fit: contain; 
-        }
-        .draggable-item:active { transform: scale(0.9); }
-
-        #drop-zone {
-            width: calc(var(--k) * 6.6); height: calc(var(--k) * 4.4);
-            border-radius: calc(var(--k) * 0.4); position: relative;
-            display: flex; flex-wrap: wrap-reverse; align-content: flex-start;
-            padding: calc(var(--k) * 0.5); gap: calc(var(--k) * 0.2);
-            cursor: pointer; 
-        }
-
-        .placed-item {
-            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
-            position: absolute; transition: all 0.2s ease-out;
-            object-fit: contain;
-            pointer-events: none; 
-        }
-
-        .red-border {
-            position: absolute;
-            width: calc(var(--k) * 1.45); height: calc(var(--k) * 3.35); 
-            border: calc(var(--k) * 0.05) solid red; border-radius: calc(var(--k) * 0.1);
-            pointer-events: none; box-sizing: border-box; z-index: 5;
-        }
-
-        #count-display {
-            position: absolute;
-            font-size: calc(var(--k) * 0.45);
+        .control-panel label {
+            font-size: 13px;
             font-weight: bold;
-            color: #ff3333; 
-            text-shadow: calc(var(--k)*0.03) calc(var(--k)*0.03) 0 #fff,
-                         calc(var(--k)*-0.03) calc(var(--k)*-0.03) 0 #fff,
-                         calc(var(--k)*0.03) calc(var(--k)*-0.03) 0 #fff,
-                         calc(var(--k)*-0.03) calc(var(--k)*0.03) 0 #fff;
-            z-index: 10;
-            pointer-events: none;
-            transform: translateX(-50%); 
-            transition: all 0.15s ease-out; 
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
         }
-
-        .submit-btn {
-            padding: calc(var(--k) * 0.1) calc(var(--k) * 0.4); font-size: calc(var(--k) * 0.35); 
-            font-weight: bold; background-color: #FFD700; border: none;
-            border-radius: calc(var(--k) * 0.15); margin-top: 0; cursor: pointer;
+        .control-panel input, .control-panel select {
+            padding: 6px;
+            margin-left: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+            color: #2c3e50;
         }
-
-        /* ==========================================
-           우측 배너 영역
-           ========================================== */
-        #banner-area {
-            padding: calc(var(--k) * 0.5) calc(var(--k) * 0.5) calc(var(--k) * 0.5) 0;
-            box-sizing: border-box; display: flex; align-items: center; 
+        .control-panel input[type="number"] {
+            width: 60px;
         }
-
-        #banner-frame {
+        #ticker-input {
+            width: 80px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .btn-group {
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            flex: 1 1 auto;
+            min-width: 140px;
+        }
+        .btn:hover {
+            background-color: #1a252f;
+        }
+        .btn-optimize {
+            background-color: #8e44ad;
+        }
+        .btn-optimize:hover {
+            background-color: #732d91;
+        }
+        .btn-download {
+            background-color: #27ae60;
+            margin-top: 10px;
+        }
+        .btn-download:hover {
+            background-color: #219653;
+        }
+        .evaluation-panel {
+            display: none; 
+            background-color: #e8f4f8;
+            border: 1px solid #bce8f1;
+            color: #31708f;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            line-height: 1.8;
+            word-break: keep-all;
+        }
+        .eval-highlight {
+            color: #e74c3c;
+            font-size: 20px;
+            margin: 0 3px;
+        }
+        .eval-sub {
+            font-size: 12px;
+            color: #555;
+            font-weight: normal;
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .main-chart {
+            height: 45vh;
+            min-height: 350px;
+        }
+        .sub-chart {
+            height: 30vh;
+            min-height: 250px;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            color: #3498db;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.5;
+            z-index: 100;
+            background: rgba(255,255,255,0.95);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             display: none;
-            width: 100%; 
-            height: calc(var(--k) * 3.5);
-            background-color: #D2B48C;
-            border: calc(var(--k) * 0.1) solid #8B4513; border-radius: calc(var(--k) * 0.2);
-            grid-template-columns: repeat(2, 1fr); justify-items: center;
-            align-content: flex-start; gap: calc(var(--k) * 0.1);
-            padding: calc(var(--k) * 0.2); box-sizing: border-box; overflow-y: auto;
+            width: 80%;
+            max-width: 300px;
+        }
+        .btn-container {
+            text-align: center;
+        }
+        #table-container {
+            display: none;
         }
 
-        .banner-item {
-            width: calc(var(--k) * 0.54); height: calc(var(--k) * 0.54);
-            background-size: contain; background-repeat: no-repeat; background-position: center;
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
         }
-
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .opt-chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .opt-result-text {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="app-wrapper">
-        <div id="app-container">
-            <div id="menu-frame">
-                <img src="images/로고.png" alt="Let's Number Logo" class="menu-logo" onerror="this.src=''">
-                <button class="menu-btn" onclick="startGame('숫자 세기 놀이')">숫자 세기 놀이</button>
-                <button class="menu-btn" onclick="startGame('더하기 놀이')">더하기 놀이</button>
-                <button class="menu-btn" onclick="startGame('빼기 놀이')">빼기 놀이</button>
-                <button class="menu-btn" onclick="startGame('곱하기 놀이')">곱하기 놀이</button>
-                <button class="menu-btn" onclick="startGame('시계 보기 놀이')">시계 보기 놀이</button>
-            </div>
+    <div id="loading">데이터를 불러오는 중입니다...</div>
 
-            <div id="game-area">
-                <h1 style="color: #888; text-align: center; font-size: calc(var(--k) * 0.6);">왼쪽에서 메뉴를 선택하세요.</h1>
+    <div id="optimizer-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="font-size: 18px; margin-top: 0;">📈 이격도 최적화 분석기 (정밀)</h2>
+            <div class="opt-chart-container">
+                <canvas id="optimizerChart"></canvas>
             </div>
-            
-            <div id="banner-area">
-                <div id="banner-frame"></div>
+            <p id="opt-result-text" class="opt-result-text">수백만 번의 시뮬레이션을 진행하고 있습니다...</p>
+            <div class="modal-actions">
+                <button id="opt-apply-btn" class="btn btn-download" style="display:none; margin:0;" onclick="applyOptimization()">적용하기</button>
+                <button class="btn" style="margin:0;" onclick="closeOptimizer()">닫기</button>
             </div>
         </div>
     </div>
 
-    <audio id="bgm-player" loop>
-        <source src="sounds_basic/bgm.wav" type="audio/wav">
-    </audio>
+    <div class="widget-container">
+        <div class="header">
+            <h1 id="main-title">Custom Analytics</h1>
+            <p>미국 주식은 티커명, 한국 주식은 6자리 숫자 코드를 입력해 보세요.</p>
+        </div>
 
-<script>
-    // ==========================================
-    // [💡 서비스 워커 등록 (오프라인 작동 지원)]
-    // ==========================================
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(reg => console.log('서비스 워커가 성공적으로 등록되었습니다.', reg.scope))
-                .catch(err => console.log('서비스 워커 등록 실패:', err));
-        });
-    }
-    
-    function calculateLayout() {
-        const availableWidth = window.innerWidth;
-        const availableHeight = window.innerHeight;
-        const appWrapper = document.getElementById('app-wrapper');
-        
-        if (availableHeight > availableWidth) {
-            appWrapper.style.alignItems = 'center';
-        } else {
-            appWrapper.style.alignItems = 'flex-start';
-        }
-        
-        let k = Math.floor(Math.min(availableWidth / 16, availableHeight / 9));
-        k = Math.max(1, k); 
-        document.documentElement.style.setProperty('--k', `${k}px`);
-    }
-
-    window.addEventListener('resize', calculateLayout);
-    calculateLayout();
-
-    const items = ['단추', '딸기', '블록', '빗', '빵', '수박', '숟가락', '연필', '자동차', '칫솔'];
-    const solvedItems = { '숫자 세기 놀이': [], '더하기 놀이': [], '빼기 놀이': [], '곱하기 놀이': [], '시계 보기 놀이': [] };
-
-    let currentGame = null;
-
-    // ==========================================
-    // [더하기 놀이용 전용 상태 변수]
-    // ==========================================
-    let add_n1 = 0;                  // 왼쪽 숫자
-    let add_n2 = 0;                  // 오른쪽 숫자
-    let leftItems = [];              // 왼쪽 배치 아이템 리스트 (DOM 요소)
-    let rightItems = [];             // 오른쪽 배치 아이템 리스트 (DOM 요소)
-    let isAnimating = false;         // 애니메이션 재생 상태
-    let isHardMode = false;          // 하드모드(힌트 비활성화) 상태 공통 변수
-    let hiddenCarryMode = false;     // 히든 커맨드(99) 올림 모드 상태
-    let isAnswered = false;          // 정답 제출 여부
-
-    // ==========================================
-    // [빼기 놀이용 전용 상태 변수]
-    // ==========================================
-    let sub_n1 = 0;                  // 빼어지는 수 (큰 수)
-    let sub_n2 = 0;                  // 빼는 수 (작은 수)
-    let subLeftItems = [];           // 왼쪽 배치 아이템 리스트 (DOM 요소)
-    let subRightItems = [];          // 오른쪽 배치 아이템 리스트 (DOM 요소, 반전 이미지)
-
-    // ==========================================
-    // [곱하기 놀이용 전용 상태 변수]
-    // ==========================================
-    let mul_n1 = 0;
-    let mul_n2 = 0;
-    let mulCellStates = {};
-    let mulImgObj = null; // 캔버스에 그릴 아이템 이미지 객체
-    let isHintPlaying = false;
-    let currentHintSession = 0; // 힌트 전용 애니메이션 중지용 세션
-    let mulHintState = { active: false, base: 0, target: 0, step: 0, isADan: true };
-
-    const mulColors = {
-        1: '#FF0000', 2: '#FFAA00', 3: '#AAFF00', 4: '#00FF00', 5: '#00FFAA', 
-        6: '#00AAFF', 7: '#0000FF', 8: '#AA00FF', 9: '#FF00AA', 10: '#FF0000'
-    };
-
-    // ==========================================
-    // [시계 보기 놀이용 전용 상태 변수]
-    // ==========================================
-    let clock_h = 0;
-    let clock_m = 0;
-    let isClockHintActive = false; // 힌트 동작 여부
-    
-    let targetItem = "";
-    let targetNumber = 0;
-    let placedItemsCount = 0;
-    
-    let soundType = "고유어"; 
-    let soundEnabled = true;
-    let showNumberStatus = true; 
-
-    let currentAudio = new Audio();
-
-    function playSound(fileName) {
-        currentAudio.pause();
-        currentAudio.onended = null; 
-        const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(fileName);
-        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
-        currentAudio.src = folder + fileName;
-        currentAudio.play().catch(e => console.log("Audio error:", e));
-    }
-
-    function playSoundSequence(fileNames) {
-        if (fileNames.length === 0) return;
-        playSound(fileNames[0]);
-        currentAudio.onended = () => { playSoundSequence(fileNames.slice(1)); };
-    }
-
-    // ==========================================
-    // [BGM 자동 재생 및 전체 화면(Fullscreen) 실행 로직]
-    // ==========================================
-    function enableFullScreenAndBGM() {
-        const bgm = document.getElementById('bgm-player');
-        if (bgm && bgm.paused) {
-            bgm.play().catch(e => console.log("BGM error", e));
-        }
-
-        const docElm = document.documentElement;
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            if (docElm.requestFullscreen) {
-                docElm.requestFullscreen();
-            } else if (docElm.webkitRequestFullScreen) {
-                docElm.webkitRequestFullScreen(); 
-            }
-        }
-    }
-
-    document.body.addEventListener('click', enableFullScreenAndBGM);
-
-    let currentSessionId = 0;
-
-    // ==========================================
-    // [커스텀 숫자 패드 관련 변수 및 함수]
-    // ==========================================
-    let activeInputId = null;
-
-    function setActiveInput(id) {
-        activeInputId = id;
-        // 모든 입력창의 강조 효과 초기화
-        document.querySelectorAll('.game-input').forEach(el => {
-            el.style.border = 'calc(var(--k)*0.05) solid #ccc';
-            el.style.boxShadow = 'none';
-        });
-        // 선택된 입력창 강조
-        const activeEl = document.getElementById(id);
-        if (activeEl) {
-            activeEl.style.border = 'calc(var(--k)*0.05) solid #ff69b4';
-            activeEl.style.boxShadow = '0 0 calc(var(--k)*0.15) #ff69b4';
-        }
-    }
-
-    function handleKeypadInput(val) {
-        if (!activeInputId || isAnswered) return;
-        const inputEl = document.getElementById(activeInputId);
-        if (!inputEl) return;
-        
-        if (val === 'back') {
-            inputEl.value = inputEl.value.slice(0, -1);
-        } else {
-            // 곱하기는 최대 3자리, 나머지는 2자리 제한
-            const maxLen = activeInputId.includes('mul') ? 3 : 2;
-            if (inputEl.value.length < maxLen) {
-                inputEl.value += val;
-            }
+        <div class="control-panel">
+            <label>시장
+                <select id="market-select">
+                    <option value="">미국</option>
+                    <option value=".KS">한국(코스피)</option>
+                    <option value=".KQ">한국(코스닥)</option>
+                </select>
+            </label>
+            <label>종목 <input type="text" id="ticker-input" value="TQQQ"></label>
+            <label>기준일수 <input type="number" id="ma-period" value="1500" min="1"></label>
+            <label>상한선(+) <input type="number" id="upper-mult" step="0.1" value="3.0"></label>
+            <label>하한선(-) <input type="number" id="lower-mult" step="0.1" value="0.5"></label>
             
-            // 시계 보기 놀이: '시'를 2자리 입력하면 자동으로 '분'으로 포커스 이동
-            if (activeInputId === 'clock-h-input' && inputEl.value.length === 2) {
-                setActiveInput('clock-m-input');
-            }
-        }
-    }
-
-    function getCustomKeypadHTML() {
-        return `
-        <div style="display: flex; gap: calc(var(--k)*0.08); justify-content: center; background: rgba(255, 255, 255, 0.8); border: calc(var(--k)*0.05) solid #aaa; border-radius: calc(var(--k)*0.15); padding: calc(var(--k)*0.1); box-shadow: 0 calc(var(--k)*0.05) calc(var(--k)*0.1) rgba(0,0,0,0.2);">
-            ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button style="width: calc(var(--k)*0.55); height: calc(var(--k)*0.55); font-size: calc(var(--k)*0.3); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #fff; cursor:pointer; color: #333; padding: 0; display: flex; justify-content: center; align-items: center;" onclick="handleKeypadInput('${n}')">${n}</button>`).join('')}
-            <button style="width: calc(var(--k)*0.55); height: calc(var(--k)*0.55); font-size: calc(var(--k)*0.3); font-weight: bold; border-radius: calc(var(--k)*0.1); border: calc(var(--k)*0.05) solid #999; background: #ffcccc; cursor:pointer; color: #333; padding: 0; display: flex; justify-content: center; align-items: center;" onclick="handleKeypadInput('back')">←</button>
-        </div>`;
-    }
-
-    function startGame(gameName) {
-        currentSessionId++; 
-        
-        currentGame = gameName;
-        document.getElementById('banner-frame').style.display = 'grid';
-        updateBanner();
-
-        if (gameName === '숫자 세기 놀이') {
-            initCountingGame();
-        } else if (gameName === '더하기 놀이') {
-            initAdditionGame(); 
-        } else if (gameName === '빼기 놀이') {
-            initSubtractionGame(); 
-        } else if (gameName === '곱하기 놀이') {
-            initMultiplicationGame();
-        } else if (gameName === '시계 보기 놀이') {
-            initClockGame();
-        } else {
-            document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
-        }
-    }
-
-    function initCountingGame() {
-        const availableItems = items.filter(i => !solvedItems['숫자 세기 놀이'].includes(i));
-        if (availableItems.length === 0) return showCompletionScreen('숫자 세기 놀이');
-        
-        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        targetNumber = Math.floor(Math.random() * 20) + 1;
-        placedItemsCount = 0;
-        isAnswered = false; // 연달아 클릭 방지용 초기화
-        
-        // 💡 하드 모드 적용 (마지막 3문제)
-        isHardMode = solvedItems['숫자 세기 놀이'].length >= (items.length - 3);
-        if (isHardMode) {
-            soundEnabled = false;
-            showNumberStatus = false;
-        } else {
-            soundEnabled = true;
-            showNumberStatus = true;
-        }
-
-        document.getElementById('game-area').innerHTML = `
-            <div class="options-bar" ${isHardMode ? 'style="justify-content: center;"' : ''}>
-                ${isHardMode 
-                    ? `<div style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: red;">💡 이제 소리와 숫자 힌트 없이 세어보세요!</div>` 
-                    : `<label><input type="checkbox" checked onchange="soundEnabled = this.checked"> 수 세는 소리</label>
-                       <label><input type="radio" name="sndType" value="고유어" checked onchange="soundType = this.value"> 고유어</label>
-                       <label><input type="radio" name="sndType" value="한자어" onchange="soundType = this.value"> 한자어</label>
-                       <label><input type="checkbox" checked onchange="showNumberStatus = this.checked; updateCountDisplay();"> 수 상태 보이기</label>`
-                }
+            <div class="btn-group">
+                <button class="btn" onclick="handleRenderClick()">데이터 불러오기 및 재계산</button>
+                <button class="btn btn-optimize" onclick="openOptimizer()">💡 이격도 최적화 계산기</button>
             </div>
-            <div class="question-text" onclick="replayQuestion()">${targetItem} ${targetNumber}개 줄래?</div>
-            <div id="drop-zone" style="background-image: url('images/숫자세기.png'); background-size: contain; background-position: center bottom; background-repeat: no-repeat; border: none;"></div>
-            <div class="items-tray">
-                ${availableItems.map(item => `<img src="images/${item}.png" class="draggable-item" onclick="placeItem('${item}')" onerror="this.src=''">`).join('')}
-            </div>
-            <button class="submit-btn" onclick="checkCountingAnswer()">전달</button>
-        `;
+        </div>
 
-        const dropZone = document.getElementById('drop-zone');
-        dropZone.onclick = removeLastItem;
-        dropZone.oncontextmenu = removeLastItem;
-
-        playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]);
-    }
-
-    function removeLastItem(e) {
-        if(e) e.preventDefault(); 
+        <div id="evaluation-panel" class="evaluation-panel"></div>
         
-        const dropZone = document.getElementById('drop-zone');
-        const itemsInZone = dropZone.querySelectorAll('.placed-item');
-        
-        if(itemsInZone.length > 0) {
-            const lastItem = itemsInZone[itemsInZone.length - 1];
-            dropZone.removeChild(lastItem);
-            placedItemsCount--;
-            updateRedBorders(); 
-            updateCountDisplay();
-        }
-    }
+        <div class="chart-wrapper main-chart">
+            <canvas id="priceChart"></canvas>
+        </div>
 
-    function updateRedBorders() {
-        const dropZone = document.getElementById('drop-zone');
-        dropZone.querySelectorAll('.red-border').forEach(e => e.remove());
+        <div class="chart-wrapper sub-chart">
+            <canvas id="disparityChart"></canvas>
+        </div>
 
-        if (placedItemsCount >= 10) {
-            const border1 = document.createElement('div');
-            border1.className = 'red-border';
-            border1.style.left = 'calc(50% - calc(var(--k) * 1.475))'; 
-            border1.style.bottom = 'calc(var(--k) * 0.3)'; 
-            dropZone.appendChild(border1);
-        }
-        
-        if (placedItemsCount >= 20) {
-            const border2 = document.createElement('div');
-            border2.className = 'red-border';
-            border2.style.left = 'calc(50% + calc(var(--k) * 0.025))'; 
-            border2.style.bottom = 'calc(var(--k) * 0.3)';
-            dropZone.appendChild(border2);
-        }
-    }
+        <div class="btn-container">
+            <button class="btn btn-download" onclick="downloadCSV()">⬇️ 일봉 데이터 표 다운로드 (.csv)</button>
+        </div>
 
-    function updateCountDisplay() {
-        let countDisplay = document.getElementById('count-display');
-        const dropZone = document.getElementById('drop-zone');
+        <div id="table-container">
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>수정종가</th>
+                        <th>물림일수(일)</th>
+                        <th>N일 이평선</th>
+                        <th>BB 상한</th>
+                        <th>BB 하한</th>
+                        <th>N일 이격도</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
 
-        if (!countDisplay) {
-            countDisplay = document.createElement('div');
-            countDisplay.id = 'count-display';
-            dropZone.appendChild(countDisplay);
-        }
-
-        if (!showNumberStatus || placedItemsCount === 0) {
-            countDisplay.style.display = 'none';
-            return;
-        }
-
-        countDisplay.style.display = 'block';
-        countDisplay.innerText = placedItemsCount;
-
-        const index = placedItemsCount - 1; 
-        const col = Math.floor(index / 5); 
-        const row = index % 5;             
-
-        const baseLeft = `calc(50% - calc(var(--k) * 1.395) + calc(var(--k) * 0.75 * ${col}))`;
-        countDisplay.style.left = `calc(${baseLeft} + calc(var(--k) * 0.27))`;
-        countDisplay.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row} + calc(var(--k) * 0.55))`;
-    }
-
-    function placeItem(itemName) {
-        if (placedItemsCount >= 20 || itemName !== targetItem) return;
-        
-        placedItemsCount++;
-        const img = document.createElement('img');
-        img.src = `images/${itemName}.png`;
-        img.className = 'placed-item';
-        
-        const index = placedItemsCount - 1; 
-        const col = Math.floor(index / 5); 
-        const row = index % 5;             
-
-        img.style.left = `calc(50% - calc(var(--k) * 1.395) + calc(var(--k) * 0.75 * ${col}))`;
-        img.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row})`;
-
-        document.getElementById('drop-zone').appendChild(img);
-        
-        updateRedBorders();
-        updateCountDisplay();
-        
-        if (soundEnabled) {
-            let soundFileName = soundType === "고유어" ? `${placedItemsCount}[고유어].wav` : `${placedItemsCount}.wav`;
-            playSound(soundFileName);
-        }
-    }
-
-    function replayQuestion() { playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]); }
-
-    function checkCountingAnswer() {
-        if (isAnswered) return; // 연달아 클릭 방지
-        
-        const dropZoneItems = document.querySelectorAll('.placed-item'); 
-        let isCorrect = (dropZoneItems.length === targetNumber);
-        
-        if (isCorrect) {
-            isAnswered = true; // 정답 처리 상태로 잠금
-            
-            const dropZone = document.getElementById('drop-zone');
-            dropZone.style.backgroundImage = "url('images/숫자세기고마워.png')";
-
-            const countDisplay = document.getElementById('count-display');
-            if(countDisplay) countDisplay.style.display = 'none';
-            dropZone.querySelectorAll('.red-border').forEach(e => e.style.display = 'none');
-
-            solvedItems['숫자 세기 놀이'].push(targetItem);
-            updateBanner();
-            
-            if (solvedItems['숫자 세기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('숫자 세기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initCountingGame, 2000);
-            }
-        } else {
-            playSound('다시해보자.wav');
-            document.querySelector('.question-text').innerText = "다시 해보자.";
-            setTimeout(() => {
-                document.querySelector('.question-text').innerText = `${targetItem} ${targetNumber}개 줄래?`;
-                const dropZone = document.getElementById('drop-zone');
-                dropZone.querySelectorAll('.placed-item, .red-border, #count-display').forEach(e => e.remove());
-                placedItemsCount = 0;
-            }, 2000);
-        }
-    }
-
-    function updateBanner() {
-        const banner = document.getElementById('banner-frame');
-        banner.innerHTML = '';
-        (solvedItems[currentGame] || []).forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'banner-item';
-            div.style.backgroundImage = `url('images/${item}.png')`;
-            banner.appendChild(div);
-        });
-    }
-
-    // 💡 모든 메뉴 완료 점검 및 개별 완료 화면 렌더링 로직
-    function showCompletionScreen(gameName) {
-        document.querySelectorAll('.menu-btn').forEach(btn => { 
-            if(btn.innerText.includes(gameName)) btn.classList.add('completed'); 
-        });
-
-        const allCompleted = Object.values(solvedItems).every(arr => arr.length === items.length);
-
-        if (allCompleted) {
-            const overlay = document.createElement('div');
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100vw';
-            overlay.style.height = '100vh';
-            overlay.style.backgroundColor = 'white'; 
-            overlay.style.zIndex = '9999';
-            overlay.style.display = 'flex';
-            overlay.style.justifyContent = 'center';
-            overlay.style.alignItems = 'center';
-            overlay.innerHTML = `<img src="images/안녕.png" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="모두 완료">`;
-            document.body.appendChild(overlay);
-            return;
-        }
-
-        const imgSrc = gameName === '숫자 세기 놀이' ? 'images/숫자세기완료.png' : 'images/셈놀이완료.png';
-        const imgStyle = gameName === '숫자 세기 놀이' 
-            ? 'width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;'
-            : 'width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain;';
-
-        document.getElementById('game-area').innerHTML = `
-            <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2); margin-top: 0;">다했어. 고마워!</h1>
-            <img src="${imgSrc}" style="${imgStyle}" alt="완료">
-        `;
-    }
-
-    // =========================================================================
-    // [더하기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
-    function initAdditionGame() {
-        const availableItems = items.filter(i => !solvedItems['더하기 놀이'].includes(i));
-        if (availableItems.length === 0) return showCompletionScreen('더하기 놀이');
-        
-        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isAnimating = false;
-        leftItems = [];
-        rightItems = [];
-        
-        isHardMode = solvedItems['더하기 놀이'].length >= (items.length - 3);
-
-        let validPairs = [];
-        if (hiddenCarryMode) {
-            for (let a = 1; a < 10; a++) {
-                for (let b = 1; b < 10; b++) {
-                    if (a + b > 10) validPairs.push([a, b]);
-                }
-            }
-        } else {
-            for (let a = 1; a < 20; a++) {
-                for (let b = 1; b <= 20 - a; b++) {
-                    validPairs.push([a, b]);
-                }
-            }
-        }
-        
-        const pair = validPairs[Math.floor(Math.random() * validPairs.length)];
-        add_n1 = pair[0];
-        add_n2 = pair[1];
-
-        document.getElementById('game-area').innerHTML = `
-            <style>
-                #add-input::-webkit-outer-spin-button,
-                #add-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                #add-input { -moz-appearance: textfield; }
-            </style>
-            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
-                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <div id="add-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
-                        모두 더해서<br>몇 개인지<br>알려줄래?
-                    </div>
-                    <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
-                </div>
-                
-                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="add-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
-                            ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
-                        </div>
-                        ${isHardMode ? 
-                            `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
-                            `<button id="hint-btn" onclick="showAdditionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
-                        }
-                    </div>
-                    
-                    <div id="add-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">+</div>
-                    </div>
-                    
-                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
-                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
-                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
-                            <input type="text" id="add-input" class="game-input" readonly onclick="setActiveInput('add-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
-                            <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
-                        </div>
-                        ${getCustomKeypadHTML()}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        const canvas = document.getElementById('add-canvas');
-        
-        const createItem = (arr) => {
-            let img = document.createElement('img');
-            img.src = `images/${targetItem}.png`;
-            img.className = 'placed-item';
-            img.style.transition = 'all 0.5s ease-in-out';
-            canvas.appendChild(img);
-            arr.push(img);
-        };
-
-        for(let i = 0; i < add_n1; i++) createItem(leftItems);
-        for(let i = 0; i < add_n2; i++) createItem(rightItems);
-
-        rearrangeAdditionItems();
-        updateAdditionBorders();
-        evaluateHintButtonState();
-
-        playSound('모두더해서몇개인지알려줄래.wav');
-        setActiveInput('add-input');
-    }
-    
-    function rearrangeAdditionItems() {
-        const startX1 = 0.5; 
-        const startX2 = 4.2; 
-        const startY = 0.5;  
-
-        leftItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX1 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
-
-        rightItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX2 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
-    }
-
-    function updateAdditionBorders(previewLeft = null, previewRight = null) {
-        const canvas = document.getElementById('add-canvas');
-        if (!canvas) return;
-        
-        canvas.querySelectorAll('.add-border').forEach(e => e.remove());
-
-        const lCount = previewLeft !== null ? previewLeft : leftItems.length;
-        const rCount = previewRight !== null ? previewRight : rightItems.length;
-
-        const startX1 = 0.5;
-        const startX2 = 4.2;
-        const startY = 0.5;
-
-        const createBorder = (x, y) => {
-            const border = document.createElement('div');
-            border.className = 'add-border red-border'; 
-            
-            border.style.left = `calc(var(--k) * ${x - 0.12})`;
-            border.style.top = `calc(var(--k) * ${y - 0.15})`;
-            border.style.width = `calc(var(--k) * 1.55)`;
-            border.style.height = `calc(var(--k) * 3.85)`;
-            
-            canvas.appendChild(border);
-        };
-
-        if (lCount >= 10) createBorder(startX1, startY);
-        if (lCount === 20) createBorder(startX1 + 1.5, startY);
-        if (rCount >= 10) createBorder(startX2, startY);
-        if (rCount === 20) createBorder(startX2 + 1.5, startY);
-    }
-
-    function evaluateHintButtonState() {
-        const hintBtn = document.getElementById('hint-btn');
-        const instLabel = document.getElementById('add-instruction');
-        if (!hintBtn) return;
-
-        if (isHardMode || isAnimating) {
-            hintBtn.disabled = true;
-            hintBtn.style.backgroundColor = '#e0e0e0';
-            return;
-        }
-
-        const lCount = leftItems.length;
-        const rCount = rightItems.length;
-        const totalCount = lCount + rCount;
-        
-        if (lCount >= 10 || rCount >= 10 || lCount === 0 || rCount === 0 || totalCount <= 10) {
-            hintBtn.disabled = true;
-            hintBtn.style.backgroundColor = '#e0e0e0';
-            if (instLabel) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
-        } else {
-            hintBtn.disabled = false;
-            hintBtn.style.backgroundColor = '#87CEEB';
-            if (instLabel) instLabel.innerText = "💡 '힌트 보기' 버튼을 눌러보세요!";
-        }
-    }
-
-    function showAdditionHint() {
-        if (isAnswered || isAnimating) return;
-
-        const lCount = leftItems.length;
-        const rCount = rightItems.length;
-        
-        if (lCount >= 10 || rCount >= 10 || lCount === 0 || rCount === 0 || (lCount + rCount) <= 10) return;
-
-        isAnimating = true;
-        evaluateHintButtonState();
-
-        const isSpecialCase = (lCount===6 && rCount===6) || (lCount===6 && rCount===7) || (lCount===6 && rCount===8) || (lCount===7 && rCount===6) || (lCount===7 && rCount===7) || (lCount===8 && rCount===6);
-
-        let srcList, tgtList, moveAmt;
-        if (lCount < rCount) {
-            srcList = leftItems; tgtList = rightItems; moveAmt = 10 - rCount;
-        } else {
-            srcList = rightItems; tgtList = leftItems; moveAmt = 10 - lCount;
-        }
-
-        moveAmt = Math.min(moveAmt, srcList.length);
-        let itemsToMove = isSpecialCase ? srcList.slice(0, moveAmt) : srcList.slice(-moveAmt);
-        const isLeftTarget = (tgtList === leftItems);
-        
-        const startX_tgt = isLeftTarget ? 0.5 : 4.2;
-        const startY = 0.5;
-
-        itemsToMove.forEach((img, i) => {
-            const targetIdx = tgtList.length + i;
-            const col = Math.floor(targetIdx / 5);
-            const row = targetIdx % 5;
-            
-            img.dataset.origLeft = img.style.left;
-            img.dataset.origTop = img.style.top;
-            
-            img.style.left = `calc(var(--k) * ${startX_tgt + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
-
-        const expectedSessionId = currentSessionId; 
-
-        setTimeout(() => {
-            if (expectedSessionId !== currentSessionId) return;
-            if (isAnswered) return;
-            
-            let previewLeft = lCount + (isLeftTarget ? moveAmt : -moveAmt);
-            let previewRight = rCount + (isLeftTarget ? -moveAmt : moveAmt);
-            updateAdditionBorders(previewLeft, previewRight);
-
-            setTimeout(() => {
-                if (expectedSessionId !== currentSessionId) return;
-                if (isAnswered) return;
-                
-                updateAdditionBorders(); 
-                
-                itemsToMove.forEach(img => {
-                    img.style.left = img.dataset.origLeft;
-                    img.style.top = img.dataset.origTop;
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => {
+                    console.log('Service Worker registration failed: ', err);
                 });
-
-                setTimeout(() => {
-                    if (expectedSessionId !== currentSessionId) return; 
-                    
-                    isAnimating = false;
-                    evaluateHintButtonState();
-                }, 500); 
-            }, 2000);
-        }, 500); 
-    }
-
-    function checkAdditionAnswer() {
-        if (isAnswered) return;
-        const inputEl = document.getElementById('add-input');
-        const userInput = inputEl.value.trim();
-
-        if (userInput === '99') {
-            hiddenCarryMode = !hiddenCarryMode; 
-            const beepAudio = new Audio('sounds_basic/beep.wav');
-            beepAudio.play().catch(e => console.log("Beep error:", e));
-            inputEl.value = '';
-            initAdditionGame();
-            return;
+            });
         }
 
-        if (userInput === '') return;
+        let cachedTicker = '';
+        let cachedCompanyName = 'TQQQ';
+        let cachedData = null;
+        let optChartInstance = null;
+        let bestOptimizedPeriod = 1500;
 
-        if (parseInt(userInput) === (add_n1 + add_n2)) {
-            isAnswered = true;
+        async function handleRenderClick() {
+            let rawTicker = document.getElementById('ticker-input').value.trim().toUpperCase();
+            const marketSuffix = document.getElementById('market-select').value;
             
-            const charImg = document.getElementById('add-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('add-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
-            solvedItems['더하기 놀이'].push(targetItem);
-            updateBanner();
-
-            if (solvedItems['더하기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('더하기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initAdditionGame, 2000);
+            if (!rawTicker) {
+                alert('티커명 혹은 6자리 종목코드를 입력해주세요.');
+                return;
             }
-        } else {
-            const speech = document.getElementById('add-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
-            playSound('다시해보자.wav');
-            
-            inputEl.value = '';
-            inputEl.focus();
-            
-            setTimeout(restoreAddQuestionText, 2000);
-        }
-    }
 
-    // =========================================================================
-    // [빼기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
-    function initSubtractionGame() {
-        const availableItems = items.filter(i => !solvedItems['빼기 놀이'].includes(i));
-        if (availableItems.length === 0) return showCompletionScreen('빼기 놀이');
-        
-        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isAnimating = false;
-        subLeftItems = [];
-        subRightItems = [];
-        
-        isHardMode = solvedItems['빼기 놀이'].length >= (items.length - 3);
-
-        let n_a = Math.floor(Math.random() * 20) + 1;
-        let n_b = Math.floor(Math.random() * 20) + 1;
-        sub_n1 = Math.max(n_a, n_b);
-        sub_n2 = Math.min(n_a, n_b);
-
-        document.getElementById('game-area').innerHTML = `
-            <style>
-                #sub-input::-webkit-outer-spin-button,
-                #sub-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                #sub-input { -moz-appearance: textfield; }
-                .inverted-item { filter: invert(1); }
-            </style>
-            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
-                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <div id="sub-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
-                        빼고 나면<br>몇 개인지<br>알려줄래?
-                    </div>
-                    <img id="sub-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
-                </div>
-                
-                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="sub-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
-                            ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
-                        </div>
-                        ${isHardMode ? 
-                            `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
-                            `<button id="sub-hint-btn" onclick="showSubtractionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
-                        }
-                    </div>
-                    
-                    <div id="sub-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">-</div>
-                    </div>
-                    
-                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
-                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
-                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${sub_n1} - ${sub_n2} = </div>
-                            <input type="text" id="sub-input" class="game-input" readonly onclick="setActiveInput('sub-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
-                            <button class="submit-btn" onclick="checkSubtractionAnswer()">확인</button>
-                        </div>
-                        ${getCustomKeypadHTML()}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const canvas = document.getElementById('sub-canvas');
-        
-        const createItem = (arr, isInverted) => {
-            let img = document.createElement('img');
-            img.src = `images/${targetItem}.png`;
-            img.className = 'placed-item' + (isInverted ? ' inverted-item' : '');
-            img.style.transition = 'all 0.5s ease-in-out, opacity 0.3s ease-in-out';
-            canvas.appendChild(img);
-            arr.push(img);
-        };
-
-        for(let i = 0; i < sub_n1; i++) createItem(subLeftItems, false);
-        for(let i = 0; i < sub_n2; i++) createItem(subRightItems, true);
-
-        rearrangeSubItems();
-        updateSubBorders();
-        evaluateSubHintButtonState();
-
-        playSound('빼고나면몇개인지알려줄래.wav');
-        setActiveInput('sub-input');
-    }
-
-    function rearrangeSubItems() {
-        const startX1 = 0.5; 
-        const startX2 = 4.2; 
-        const startY = 0.5;  
-
-        subLeftItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX1 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
-
-        subRightItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX2 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
-    }
-
-    function updateSubBorders(previewLeft = null, previewRight = null) {
-        const canvas = document.getElementById('sub-canvas');
-        if (!canvas) return;
-        
-        canvas.querySelectorAll('.sub-border').forEach(e => e.remove());
-
-        const lCount = previewLeft !== null ? previewLeft : subLeftItems.length;
-        const rCount = previewRight !== null ? previewRight : subRightItems.length;
-
-        const startX1 = 0.5;
-        const startX2 = 4.2;
-        const startY = 0.5;
-
-        const createBorder = (x, y) => {
-            const border = document.createElement('div');
-            border.className = 'sub-border red-border'; 
-            border.style.left = `calc(var(--k) * ${x - 0.12})`;
-            border.style.top = `calc(var(--k) * ${y - 0.15})`;
-            border.style.width = `calc(var(--k) * 1.55)`;
-            border.style.height = `calc(var(--k) * 3.85)`;
-            canvas.appendChild(border);
-        };
-
-        if (lCount >= 10) createBorder(startX1, startY);
-        if (lCount === 20) createBorder(startX1 + 1.5, startY);
-        if (rCount >= 10) createBorder(startX2, startY);
-        if (rCount === 20) createBorder(startX2 + 1.5, startY);
-    }
-
-    function evaluateSubHintButtonState() {
-        const hintBtn = document.getElementById('sub-hint-btn');
-        const instLabel = document.getElementById('sub-instruction');
-        if (!hintBtn) return;
-
-        if (isHardMode || isAnimating || subRightItems.length === 0) {
-            hintBtn.disabled = true;
-            hintBtn.style.backgroundColor = '#e0e0e0';
-            if (instLabel && subRightItems.length === 0) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
-        } else {
-            hintBtn.disabled = false;
-            hintBtn.style.backgroundColor = '#87CEEB';
-            if (instLabel) instLabel.innerText = "💡 '힌트 보기' 버튼을 눌러보세요!";
-        }
-    }
-
-    function showSubtractionHint() {
-        if (isAnswered || isAnimating || subRightItems.length === 0) return;
-
-        isAnimating = true;
-        evaluateSubHintButtonState();
-
-        updateSubBorders(subLeftItems.length, 0); 
-
-        const numToCancel = subRightItems.length;
-        const remain = subLeftItems.length - numToCancel;
-        
-        const startRow = Math.floor((subLeftItems.length - 1) / 5);
-        const endRow = remain <= 0 ? -1 : Math.floor((remain - 1) / 5);
-        const isSpecialCase = (startRow > endRow) && (remain % 5 !== 0);
-
-        let leftTargets = [];
-        if (isSpecialCase) {
-            if (remain > 10) {
-                leftTargets = subLeftItems.slice(10, 10 + numToCancel);
-            } else {
-                leftTargets = subLeftItems.slice(0, numToCancel);
+            let inputTicker = rawTicker;
+            if (marketSuffix !== "" && !rawTicker.includes(".")) {
+                inputTicker = rawTicker + marketSuffix;
             }
-        } else {
-            leftTargets = subLeftItems.slice(-numToCancel);
-        }
 
-        subRightItems.forEach((rItem, i) => {
-            const lItem = leftTargets[i];
-            rItem.dataset.origLeft = rItem.style.left;
-            rItem.dataset.origTop = rItem.style.top;
-            
-            rItem.style.left = lItem.style.left;
-            rItem.style.top = lItem.style.top;
-        });
-
-        const expectedSessionId = currentSessionId;
-
-        setTimeout(() => {
-            if (expectedSessionId !== currentSessionId) return; 
-            if (isAnswered) return;
-            
-            subRightItems.forEach(rItem => rItem.style.opacity = "0");
-            leftTargets.forEach(lItem => lItem.style.opacity = "0");
-            
-            const previewLeftCount = subLeftItems.length - subRightItems.length;
-            updateSubBorders(previewLeftCount, 0);
-
-            setTimeout(() => {
-                if (expectedSessionId !== currentSessionId) return; 
-                if (isAnswered) return;
-                
-                subRightItems.forEach(rItem => rItem.style.opacity = "1");
-                leftTargets.forEach(lItem => lItem.style.opacity = "1");
-                
-                setTimeout(() => {
-                    if (expectedSessionId !== currentSessionId) return; 
-                    if (isAnswered) return;
-                    
-                    subRightItems.forEach(rItem => {
-                        rItem.style.left = rItem.dataset.origLeft;
-                        rItem.style.top = rItem.dataset.origTop;
-                    });
-
-                    setTimeout(() => {
-                        if (expectedSessionId !== currentSessionId) return; 
-                        if (isAnswered) return;
-                        
-                        updateSubBorders(); 
-                        isAnimating = false;
-                        evaluateSubHintButtonState();
-                    }, 500);
-                }, 100); 
-            }, 2000);
-        }, 500);
-    }
-
-    function checkSubtractionAnswer() {
-        if (isAnswered) return;
-        const inputEl = document.getElementById('sub-input');
-        const userInput = inputEl.value.trim();
-
-        if (userInput === '') return;
-
-        if (parseInt(userInput) === (sub_n1 - sub_n2)) {
-            isAnswered = true;
-            
-            const charImg = document.getElementById('sub-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('sub-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
-            solvedItems['빼기 놀이'].push(targetItem);
-            updateBanner();
-
-            if (solvedItems['빼기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('빼기 놀이'), 2000);
+            if (inputTicker !== cachedTicker) {
+                await fetchNewData(inputTicker);
             } else {
-                playSound('고마워.wav');
-                setTimeout(initSubtractionGame, 2000);
+                calculateAndRender();
             }
-        } else {
-            const speech = document.getElementById('sub-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
-            playSound('다시해보자.wav');
-            
-            inputEl.value = '';
-            inputEl.focus();
-            
-            setTimeout(restoreSubQuestionText, 2000);
         }
-    }
 
-    function restoreSubQuestionText() {
-        if (!isAnswered) {
-            const speech = document.getElementById('sub-speech');
-            if(speech) speech.innerHTML = "빼고 나면<br>몇 개인지<br>알려줄래?";
-            
-            const charImg = document.getElementById('sub-char');
-            if(charImg) charImg.src = 'images/셈놀이.png';
-            
-            playSound('빼고나면몇개인지알려줄래.wav');
-        }
-    }
+        async function fetchNewData(ticker) {
+            const loadingEl = document.getElementById('loading');
+            loadingEl.style.display = 'block';
+            loadingEl.innerHTML = `${ticker} 데이터를 불러오는 중입니다...<br><span style="font-size:14px; color:#7f8c8d;">(야후 서버 응답 대기 중)</span>`;
+            loadingEl.style.color = '#3498db';
 
-    // =========================================================================
-    // [곱하기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
-    function initMultiplicationGame() {
-        const availableItems = items.filter(i => !solvedItems['곱하기 놀이'].includes(i));
-        if (availableItems.length === 0) return showCompletionScreen('곱하기 놀이');
-        
-        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isHintPlaying = false;
-        mulCellStates = {};
-        mulHintState = { active: false };
+            const currentUnixTime = Math.floor(Date.now() / 1000); 
+            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=0&period2=${currentUnixTime}&interval=1d`;
 
-        mul_n1 = Math.floor(Math.random() * 10) + 1;
-        mul_n2 = Math.floor(Math.random() * 10) + 1;
-        
-        isHardMode = solvedItems['곱하기 놀이'].length >= (items.length - 3);
+            const proxyList = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            ];
 
-        mulImgObj = new Image();
-        mulImgObj.src = `images/${targetItem}.png`;
-        mulImgObj.onload = renderMulBoard; 
-
-        document.getElementById('game-area').innerHTML = `
-            <style>
-                #mul-input::-webkit-outer-spin-button,
-                #mul-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                #mul-input { -moz-appearance: textfield; }
-            </style>
-            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
-                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <div id="mul-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
-                        곱하면<br>몇 개인지<br>알려줄래?
-                    </div>
-                    <img id="mul-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
-                </div>
-                
-                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
-                            ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 마름모 칸을 클릭하거나<br>'단 실행'을 눌러보세요!"}
-                        </div>
-                        <div style="display: flex; align-items: center; gap: calc(var(--k) * 0.1);">
-                            ${isHardMode 
-                                ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` 
-                                : `<button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
-                                   <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>`
+            try {
+                let dataFetched = null;
+                for (let proxy of proxyList) {
+                    try {
+                        const response = await fetch(proxy, { method: 'GET', headers: { 'Accept': 'application/json' }});
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.chart && data.chart.result) {
+                                dataFetched = data;
+                                break; 
                             }
-                        </div>
-                    </div>
-                    
-                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <canvas id="mul-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;" onclick="onMulCanvasClick(event)"></canvas>
-                    </div>
-                    
-                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
-                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
-                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
-                            <input type="text" id="mul-input" class="game-input" readonly onclick="setActiveInput('mul-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
-                            <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkMultiplicationAnswer()">확인</button>
-                        </div>
-                        ${getCustomKeypadHTML()}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        renderMulBoard();
-        playSound('곱하면몇개인지알려줄래.wav');
-        setActiveInput('mul-input');
-    }
-    
-    function renderMulBoard() {
-        const canvas = document.getElementById('mul-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const a = mul_n1;
-        const b = mul_n2;
-        
-        const startX = 400;
-        const dx = 34; 
-        const dy = 28; 
-        
-        const startY = 40 + (10 - Math.max(a, b)) * 20; 
-        
-        const R = (Math.hypot(dx, dy) / 2) * 0.9;
-        const leftStartRad = Math.atan2(dy, dx); 
-        const rightStartRad = Math.atan2(-dy, dx);
-
-        const colorA = mulColors[a] || '#B0C4DE';
-        const colorB = mulColors[b] || '#B0C4DE';
-
-        // 1. 마름모 셀 그리기
-        for (let i = 0; i < a; i++) {
-            for (let j = 0; j < b; j++) {
-                let x0 = startX - i * dx + j * dx;
-                let y0 = startY + i * dy + j * dy;
-                
-                ctx.beginPath();
-                ctx.moveTo(x0, y0);
-                ctx.lineTo(x0 - dx, y0 + dy);
-                ctx.lineTo(x0, y0 + 2 * dy);
-                ctx.lineTo(x0 + dx, y0 + dy);
-                ctx.closePath();
-                
-                const key = `${i}_${j}`;
-                let isFilled = mulCellStates[key];
-                let fillColor = isFilled ? '#B0C4DE' : 'white';
-
-                if (mulHintState.active) {
-                    const hColor = mulColors[mulHintState.base] || '#B0C4DE';
-                    if (mulHintState.isADan) {
-                        if (i < mulHintState.base && j < mulHintState.step) fillColor = hColor; 
-                    } else {
-                        if (i < mulHintState.step && j < mulHintState.base) fillColor = hColor; 
+                        }
+                    } catch (error) {
+                        console.warn(`Proxy fail:`, error);
                     }
                 }
 
-                ctx.fillStyle = fillColor;
-                ctx.fill();
-            }
-        }
+                if (!dataFetched) throw new Error('모든 프록시에서 데이터 로드 실패');
 
-        // 2. 왼쪽 아크(반원) 그리기
-        for (let i = 0; i < a; i++) {
-            let cx = startX - (i + 0.5) * dx;
-            let cy = startY + (i + 0.5) * dy;
-            let arcColor = colorA;
-            if (mulHintState.active && !mulHintState.isADan && i < mulHintState.step) {
-                arcColor = mulColors[mulHintState.step] || '#B0C4DE';
-            }
-            ctx.beginPath();
-            ctx.arc(cx, cy, R, Math.atan2(-dy, dx), Math.atan2(dy, -dx), true);
-            ctx.fillStyle = arcColor; ctx.fill();
-            ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
-        }
+                const result = dataFetched.chart.result[0];
+                const meta = result.meta;
+                const companyName = meta.shortName || meta.longName || ticker;
+                cachedCompanyName = companyName;
 
-        // 3. 오른쪽 아크(반원) 그리기
-        for (let j = 0; j < b; j++) {
-            let cx = startX + (j + 0.5) * dx;
-            let cy = startY + (j + 0.5) * dy;
-            let arcColor = colorB;
-            if (mulHintState.active && mulHintState.isADan && j < mulHintState.step) {
-                arcColor = mulColors[mulHintState.step] || '#B0C4DE';
-            }
-            ctx.beginPath();
-            ctx.arc(cx, cy, R, Math.atan2(-dy, -dx), Math.atan2(dy, dx), false);
-            ctx.fillStyle = arcColor; ctx.fill();
-            ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
-        }
+                const timestamps = result.timestamp;
+                const priceDataArray = result.indicators.adjclose ? result.indicators.adjclose[0].adjclose : result.indicators.quote[0].close;
 
-        // 4. 격자 외곽선 그리기
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#B0C4DE';
-        for (let i = 0; i <= a; i++) {
-            ctx.beginPath();
-            ctx.moveTo(startX - i * dx, startY + i * dy);
-            ctx.lineTo((startX - i * dx) + b * dx, (startY + i * dy) + b * dy);
-            ctx.stroke();
-        }
-        for (let j = 0; j <= b; j++) {
-            ctx.beginPath();
-            ctx.moveTo(startX + j * dx, startY + j * dy);
-            ctx.lineTo((startX + j * dx) - a * dx, (startY + j * dy) + a * dy);
-            ctx.stroke();
-        }
+                let dates = [];
+                let prices = [];
 
-        // 5. a, b 텍스트 표시
-        ctx.fillStyle = '#333333';
-        ctx.font = 'bold 25px "Malgun Gothic", sans-serif';
-        ctx.fillText(a, startX - (a / 2) * dx - 25, startY + (a / 2) * dy - 15);
-        ctx.fillText(b, startX + (b / 2) * dx + 15, startY + (b / 2) * dy - 15);
+                for (let i = 0; i < timestamps.length; i++) {
+                    const currentPrice = priceDataArray[i];
+                    if (!currentPrice || currentPrice <= 0 || !Number.isFinite(currentPrice)) continue;
 
-        // 6. 아이템 이미지 표시
-        if (mulImgObj && mulImgObj.complete && mulImgObj.naturalHeight !== 0) {
-            for (let i = 0; i < a; i++) {
-                for (let j = 0; j < b; j++) {
-                    let cx = startX - (i + 0.5) * dx + (j + 0.5) * dx;
-                    let cy = startY + (i + 0.5) * dy + (j + 0.5) * dy;
-                    ctx.drawImage(mulImgObj, cx - 23, cy - 23, 46, 46);
+                    const dateObj = new Date(timestamps[i] * 1000);
+                    const dateStr = dateObj.toISOString().split('T')[0];
+                    
+                    dates.push(dateStr);
+                    prices.push(currentPrice);
                 }
+
+                const N = prices.length;
+                let rawMulrimData = new Array(N).fill(0);
+                let maxMulrim = 0;
+                for (let i = 0; i < N; i++) {
+                    let count = 0;
+                    let currentPrice = prices[i];
+                    for (let j = i + 1; j < N; j++) {
+                        if (prices[j] < currentPrice) count++;
+                    }
+                    rawMulrimData[i] = count;
+                    if (count > maxMulrim) maxMulrim = count;
+                }
+
+                cachedData = { dates: dates, prices: prices, rawMulrimData: rawMulrimData, maxMulrim: maxMulrim };
+                cachedTicker = ticker;
+
+                document.getElementById('main-title').innerText = `${companyName} Analytics`;
+
+                loadingEl.style.display = 'none';
+                calculateAndRender(); 
+
+            } catch (error) {
+                console.error(error);
+                loadingEl.innerHTML = `데이터 통신에 실패했습니다.<br><span style="font-size:13px;">상장폐지 여부나 종목코드를 다시 확인해 주세요.</span>`;
+                loadingEl.style.color = '#e74c3c';
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 3000);
             }
         }
 
-        // 7. 힌트 진행 중 가운데 수식 텍스트
-        if (mulHintState.active) {
-            const hintFormula = `${mulHintState.base} x ${mulHintState.step} = ${mulHintState.base * mulHintState.step}`;
-            ctx.fillStyle = 'black';
-            ctx.font = 'bold 40px "Malgun Gothic", sans-serif';
-            ctx.textAlign = "center";
-            ctx.fillText(hintFormula, 400, 650);
-            ctx.textAlign = "left"; 
-        }
-    }
+        function calculateAndRender() {
+            if (!cachedData) return;
 
-    function onMulCanvasClick(event) {
-        if (isAnswered || isHintPlaying) return;
-        const canvas = document.getElementById('mul-canvas');
-        const rect = canvas.getBoundingClientRect();
-        
-        const scale = Math.min(rect.width / 800, rect.height / 700);
-        const renderedWidth = 800 * scale;
-        const renderedHeight = 700 * scale;
-        const offsetX = (rect.width - renderedWidth) / 2;
-        const offsetY = (rect.height - renderedHeight) / 2;
+            const period = parseInt(document.getElementById('ma-period').value) || 1500;
+            const upperMult = parseFloat(document.getElementById('upper-mult').value) || 3.0;
+            const lowerMult = parseFloat(document.getElementById('lower-mult').value) || 0.5;
 
-        const x = (event.clientX - rect.left - offsetX) / scale;
-        const y = (event.clientY - rect.top - offsetY) / scale;
+            let smaData = [];
+            let upperBBData = [];
+            let lowerBBData = [];
+            let disparityData = [];
+            let validDisparities = [];
+            let windowPrices = [];
 
-        if (x < 0 || x > 800 || y < 0 || y > 700) return;
+            const N = cachedData.prices.length;
+            const maxMulrim = cachedData.maxMulrim;
+            const rawMulrimData = cachedData.rawMulrimData;
 
-        const a = mul_n1, b = mul_n2;
-        const dx = 34, dy = 28;
-        const startX = 400;
-        const startY = 40 + (10 - Math.max(a, b)) * 20;
+            for (let i = 0; i < N; i++) {
+                const currentPrice = cachedData.prices[i];
+                windowPrices.push(currentPrice);
 
-        const U = (x - startX) / dx;
-        const V = (y - startY) / dy;
+                if (windowPrices.length > period) windowPrices.shift();
 
-        const iIdx = Math.floor((V - U) / 2);
-        const jIdx = Math.floor((V + U) / 2);
+                if (windowPrices.length === period) {
+                    const sum = windowPrices.reduce((a, b) => a + b, 0);
+                    const average = sum / period;
+                    let sqSum = 0;
+                    for (let j = 0; j < period; j++) sqSum += Math.pow(windowPrices[j] - average, 2);
+                    const stdDev = Math.sqrt(sqSum / period);
 
-        if (iIdx >= 0 && iIdx < a && jIdx >= 0 && jIdx < b) {
-            const key = `${iIdx}_${jIdx}`;
-            mulCellStates[key] = !mulCellStates[key];
-            renderMulBoard();
-        }
-    }
-    
-    function getKrNumStr(n) {
-        const units = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
-        if (n === 10) return '십';
-        if (n === 100) return '백';
-        if (n < 10) return units[n];
-        
-        const tens = Math.floor(n / 10);
-        const ones = n % 10;
-        
-        let res = '';
-        if (tens > 1) res += units[tens];
-        if (tens >= 1) res += '십';
-        res += units[ones];
-        return res;
-    }
-
-    function executeDanHint(base, target, isADan) {
-        if (isAnswered) return;
-        
-        currentHintSession++;
-        const hintSessionId = currentHintSession;
-        isHintPlaying = true;
-        
-        const btnA = document.getElementById('mul-hint-btn-a');
-        const btnB = document.getElementById('mul-hint-btn-b');
-        
-        if (isADan) {
-            btnA.disabled = true; btnB.disabled = false;
-        } else {
-            btnA.disabled = false; btnB.disabled = true;
-        }
-
-        mulCellStates = {};
-        mulHintState = { active: false };
-        renderMulBoard();
-
-        const expectedMenuSession = currentSessionId;
-        playHintStep(base, target, 1, isADan, expectedMenuSession, hintSessionId);
-    }
-
-    function playHintStep(base, target, step, isADan, menuSession, hintSession) {
-        if (currentSessionId !== menuSession) return;
-        if (currentHintSession !== hintSession) return;
-
-        if (step > target || isAnswered) {
-            mulHintState.active = false;
-            mulCellStates = {}; 
-            renderMulBoard();
-            isHintPlaying = false;
-            document.getElementById('mul-hint-btn-a').disabled = false;
-            document.getElementById('mul-hint-btn-b').disabled = false;
-            return;
-        }
-
-        mulHintState = { active: true, base: base, target: target, step: step, isADan: isADan };
-        renderMulBoard();
-
-        const w1 = base + ".wav";
-        const w2 = "곱하기.wav";
-        const w3 = step + ".wav";
-        const w4 = "는.wav";
-        const w5 = (base * step) + ".wav";
-        
-        const sequence = [w1, w2, w3, w4, w5];
-        
-        playWordSequence(sequence, () => {
-            setTimeout(() => {
-                playHintStep(base, target, step + 1, isADan, menuSession, hintSession);
-            }, 500);
-        }, menuSession, hintSession);
-    }
-
-    function playWordSequence(sequence, onComplete, menuSession, hintSession) {
-        if (currentSessionId !== menuSession) return;
-        if (currentHintSession !== hintSession) return;
-
-        if (sequence.length === 0 || isAnswered) {
-            onComplete();
-            return;
-        }
-        
-        const wordFile = sequence.shift();
-        
-        const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(wordFile);
-        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
-        
-        currentAudio.pause();
-        currentAudio.src = folder + wordFile;
-        currentAudio.onended = () => {
-            setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 150);
-        };
-        currentAudio.play().catch(e => {
-            console.log("Sequence Audio error:", e);
-            setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 500);
-        });
-    }
-
-    function checkMultiplicationAnswer() {
-        if (isAnswered) return;
-        const inputEl = document.getElementById('mul-input');
-        const userInput = inputEl.value.trim();
-
-        if (userInput === '99') {
-            const beepAudio = new Audio('sounds_basic/beep.wav');
-            beepAudio.play().catch(e => console.log("Beep error:", e));
-            
-            inputEl.value = '';
-            initMultiplicationGame();
-            return;
-        }
-
-        if (userInput === '') return;
-        const correctAnswer = mul_n1 * mul_n2;
-
-        if (parseInt(userInput) === correctAnswer) {
-            isAnswered = true;
-            
-            const charImg = document.getElementById('mul-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('mul-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
-            solvedItems['곱하기 놀이'].push(targetItem);
-            updateBanner();
-
-            if (solvedItems['곱하기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+                    if (average > 0) {
+                        const disparity = currentPrice / average; 
+                        smaData.push(average);
+                        upperBBData.push(average + (upperMult * stdDev));
+                        lowerBBData.push(Math.max(average - (lowerMult * stdDev), 0.0001));
+                        
+                        if (Number.isFinite(disparity)) {
+                            disparityData.push(disparity);
+                            validDisparities.push(disparity);
+                        } else disparityData.push(null);
+                    } else {
+                        smaData.push(null); upperBBData.push(null); lowerBBData.push(null); disparityData.push(null);
+                    }
                 } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('곱하기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initMultiplicationGame, 2000);
-            }
-        } else {
-            const speech = document.getElementById('mul-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
-            playSound('다시해보자.wav');
-            
-            inputEl.value = '';
-            inputEl.focus();
-            
-            setTimeout(() => {
-                if (!isAnswered) {
-                    if(speech) speech.innerHTML = "곱하면<br>몇 개인지<br>알려줄래?";
-                    const charImg = document.getElementById('mul-char');
-                    if(charImg) charImg.src = 'images/셈놀이.png';
-                    playSound('곱하면몇개인지알려줄래.wav');
-                }
-            }, 2000);
-        }
-    }
-
-    // =========================================================================
-    // [시계 보기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
-    function initClockGame() {
-        const availableItems = items.filter(i => !solvedItems['시계 보기 놀이'].includes(i));
-        if (availableItems.length === 0) return showCompletionScreen('시계 보기 놀이');
-        
-        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isClockHintActive = false;
-
-        clock_h = Math.floor(Math.random() * 12) + 1;
-        clock_m = Math.floor(Math.random() * 12) * 5; 
-
-        isHardMode = solvedItems['시계 보기 놀이'].length >= (items.length - 3);
-
-        document.getElementById('game-area').innerHTML = `
-            <style>
-                .clock-input::-webkit-outer-spin-button,
-                .clock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                .clock-input { -moz-appearance: textfield; text-align: center; font-weight: bold; font-family: 'Malgun Gothic', sans-serif; }
-            </style>
-            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
-                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <div id="clock-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
-                        몇 시 몇 분<br>인지<br>알려줄래?
-                    </div>
-                    <img id="clock-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
-                </div>
-                
-                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="clock-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
-                            ${isHardMode ? "💡 이제 힌트 없이 몇 시 몇 분인지 적어보세요!" : "💡 시계를 보고 몇 시 몇 분인지 적어보세요!"}
-                        </div>
-                        <div style="display: flex; align-items: center;">
-                            ${isHardMode
-                                ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>`
-                                : `<button id="clock-hint-btn" onclick="showClockHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
-                            }
-                        </div>
-                    </div>
-                    
-                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
-                    </div>
-                    
-                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
-                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
-                            <input type="text" id="clock-h-input" class="game-input" readonly onclick="setActiveInput('clock-h-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080; text-align: center; outline: none; cursor: pointer;">
-                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
-                            
-                            <input type="text" id="clock-m-input" class="game-input" readonly onclick="setActiveInput('clock-m-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2); text-align: center; outline: none; cursor: pointer;">
-                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
-                            
-                            <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
-                        </div>
-                        ${getCustomKeypadHTML()}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        renderClockBoard();
-        playSound('몇시몇분인지알려줄래.wav');
-        setActiveInput('clock-h-input');
-    }
-    
-    function renderClockBoard() {
-        const canvas = document.getElementById('clock-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const cx = 400;
-        const cy = 350; 
-        const r = 240;  
-
-        // 1. 시계 바탕 원
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-        ctx.fillStyle = 'white'; ctx.fill();
-        ctx.lineWidth = 10; ctx.strokeStyle = '#8B4513'; ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.arc(cx, cy, r - 12, 0, 2 * Math.PI);
-        ctx.lineWidth = 3; ctx.strokeStyle = '#D2B48C'; ctx.stroke();
-
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        // 2. 눈금 및 숫자
-        for (let i = 1; i <= 60; i++) {
-            const angle = (i * 6 - 90) * (Math.PI / 180);
-            const isHour = (i % 5 === 0);
-            
-            const outerR = r - 15;
-            const innerR = isHour ? r - 35 : r - 25;
-            
-            const x1 = cx + innerR * Math.cos(angle);
-            const y1 = cy + innerR * Math.sin(angle);
-            const x2 = cx + outerR * Math.cos(angle);
-            const y2 = cy + outerR * Math.sin(angle);
-            
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.lineWidth = isHour ? 5 : 2;
-            ctx.strokeStyle = isHour ? 'black' : 'gray';
-            ctx.stroke();
-
-            // 시간 숫자 표시 (1~12)
-            if (isHour) {
-                const num = i / 5;
-                const textR = r - 70;
-                const tx = cx + textR * Math.cos(angle);
-                const ty = cy + textR * Math.sin(angle);
-                
-                // 힌트 상태일 때 오답 숨기기
-                if (!isClockHintActive || num === clock_h) {
-                    ctx.fillStyle = '#008080';
-                    ctx.font = 'bold 35px Arial';
-                    ctx.fillText(num, tx, ty);
-                }
-
-                // 분 숫자 표시 (0~55)
-                const minVal = (i === 60) ? 0 : i;
-                const minStr = minVal < 10 ? '0' + minVal : minVal.toString();
-                const minTextR = r + 30;
-                const mtx = cx + minTextR * Math.cos(angle);
-                const mty = cy + minTextR * Math.sin(angle);
-                
-                if (!isClockHintActive || minVal === clock_m) {
-                    ctx.fillStyle = '#800080';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.fillText(minStr, mtx, mty);
+                    smaData.push(null); upperBBData.push(null); lowerBBData.push(null); disparityData.push(null);
                 }
             }
-        }
 
-        ctx.lineCap = 'round';
+            let avgDisparity = validDisparities.length > 0 ? validDisparities.reduce((a, b) => a + b, 0) / validDisparities.length : 0;
 
-        // 3. 시침 (시간 + 분에 따른 미세 각도 이동)
-        const hLen = 110;
-        const hAngle = ((clock_h % 12) * 30 + (clock_m * 0.5) - 90) * (Math.PI / 180);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + hLen * Math.cos(hAngle), cy + hLen * Math.sin(hAngle));
-        ctx.lineWidth = 14; ctx.strokeStyle = '#008080'; ctx.stroke();
+            let disparityBaseLineData = [];
+            let disparityAvgLineData = [];
+            let priceAvgDisparityLineData = [];
+            let upperBBDisparityData = [];
+            let lowerBBDisparityData = [];
 
-        // 4. 분침
-        const mLen = 160;
-        const mAngle = (clock_m * 6 - 90) * (Math.PI / 180);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + mLen * Math.cos(mAngle), cy + mLen * Math.sin(mAngle));
-        ctx.lineWidth = 8; ctx.strokeStyle = '#800080'; ctx.stroke();
-
-        // 5. 중심점 핀
-        ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 2 * Math.PI); ctx.fillStyle = '#8B4513'; ctx.fill();
-        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2 * Math.PI); ctx.fillStyle = '#FFD700'; ctx.fill();
-    }
-
-    function showClockHint() {
-        if (isAnswered || isClockHintActive) return;
-        
-        isClockHintActive = true;
-        document.getElementById('clock-hint-btn').disabled = true;
-        document.getElementById('clock-hint-btn').style.backgroundColor = '#e0e0e0';
-        
-        // 힌트 모드로 캔버스 다시 그리기 (정답만 보임)
-        renderClockBoard();
-        
-        currentSessionId++; 
-        const session = currentSessionId;
-        
-        setTimeout(() => {
-            if (session !== currentSessionId) return; 
-            if (isAnswered) return;
-            
-            isClockHintActive = false;
-            renderClockBoard();
-            
-            const btn = document.getElementById('clock-hint-btn');
-            if (btn) {
-                btn.disabled = false;
-                btn.style.backgroundColor = '#87CEEB';
-            }
-        }, 2000);
-    }
-
-    function checkClockAnswer() {
-        if (isAnswered) return;
-        const inputH = document.getElementById('clock-h-input').value.trim();
-        const inputM = document.getElementById('clock-m-input').value.trim();
-
-        if (inputH === '99' || inputM === '99') {
-            const beepAudio = new Audio('sounds_basic/beep.wav');
-            beepAudio.play().catch(e => console.log("Beep error:", e));
-            initClockGame();
-            return;
-        }
-
-        if (inputH === '' || inputM === '') return;
-
-        if (parseInt(inputH) === clock_h && parseInt(inputM) === clock_m) {
-            isAnswered = true;
-            
-            const charImg = document.getElementById('clock-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('clock-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
-            solvedItems['시계 보기 놀이'].push(targetItem);
-            updateBanner();
-
-            if (solvedItems['시계 보기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+            for (let i = 0; i < N; i++) {
+                if (disparityData[i] !== null) {
+                    disparityBaseLineData.push(1.0); 
+                    disparityAvgLineData.push(avgDisparity); 
+                    priceAvgDisparityLineData.push(smaData[i] * avgDisparity); 
+                    upperBBDisparityData.push(upperBBData[i] / smaData[i]);
+                    lowerBBDisparityData.push(lowerBBData[i] / smaData[i]);
                 } else {
-                    playSound('다했어고마워.wav');
+                    disparityBaseLineData.push(null); disparityAvgLineData.push(null); priceAvgDisparityLineData.push(null);
+                    upperBBDisparityData.push(null); lowerBBDisparityData.push(null);
                 }
-                setTimeout(() => showCompletionScreen('시계 보기 놀이'), 2000);
+            }
+
+            let displayMulrimData = new Array(N);
+            for (let i = 0; i < N; i++) {
+                if ((N - 1) - i < maxMulrim) displayMulrimData[i] = "데이터 부족";
+                else displayMulrimData[i] = rawMulrimData[i];
+            }
+
+            let rSquared = 0, slope = 0, intercept = 0, validX = [], validY = [];
+            for (let i = 0; i < N; i++) {
+                if (disparityData[i] !== null && displayMulrimData[i] !== "데이터 부족") {
+                    validX.push(disparityData[i]); validY.push(rawMulrimData[i]);
+                }
+            }
+
+            if (validX.length > 1) {
+                let sumX = 0, sumY = 0;
+                for (let i = 0; i < validX.length; i++) { sumX += validX[i]; sumY += validY[i]; }
+                let meanX = sumX / validX.length, meanY = sumY / validY.length;
+                let covXY = 0, varX = 0, varY = 0;
+                for (let i = 0; i < validX.length; i++) {
+                    let dx = validX[i] - meanX, dy = validY[i] - meanY;
+                    covXY += dx * dy; varX += dx * dx; varY += dy * dy;
+                }
+                if (varX > 0 && varY > 0) {
+                    rSquared = (covXY / Math.sqrt(varX * varY)) ** 2;
+                    slope = covXY / varX;
+                    intercept = meanY - slope * meanX;
+                }
+            }
+
+            let maxDisp = 5, minDisp = 0;
+            if (validDisparities.length > 0) {
+                let validUpper = upperBBDisparityData.filter(v => v !== null);
+                let validLower = lowerBBDisparityData.filter(v => v !== null);
+                maxDisp = Math.max(...validDisparities, 1.0, avgDisparity, ...validUpper);
+                minDisp = Math.min(...validDisparities, 1.0, avgDisparity, ...validLower);
+            }
+
+            const evalPanel = document.getElementById('evaluation-panel');
+            if (validDisparities.length > 0) {
+                const latestDate = cachedData.dates[cachedData.dates.length - 1];
+                const latestDisparity = validDisparities[validDisparities.length - 1];
+                let riskLevel = maxDisp > minDisp ? ((latestDisparity - minDisp) / (maxDisp - minDisp)) * 100 : 0;
+                let expectedMulrim = Math.max(0, Math.round(slope * latestDisparity + intercept)) || 0;
+
+                evalPanel.innerHTML = `오늘의 평가 (${latestDate})<br>` +
+                                      `<div style="margin: 10px 0;">이격 비율 : <span class="eval-highlight">${latestDisparity.toFixed(2)}x</span> &nbsp;|&nbsp; ` +
+                                      `위험도 : <span class="eval-highlight">${riskLevel.toFixed(1)}%</span></div>` +
+                                      `추세선(회귀분석) 기반 예상 물림일수 : <span class="eval-highlight">약 ${expectedMulrim}일</span><br>` +
+                                      `<span style="font-size:14px; color:#7f8c8d; display:inline-block; margin-top:10px;">기준일수: ${period}일 / R²: ${rSquared.toFixed(4)} / 평균 이격도: ${avgDisparity.toFixed(2)}x</span>`;
+                evalPanel.style.display = 'block';
             } else {
-                playSound('고마워.wav');
-                setTimeout(initClockGame, 2000);
+                evalPanel.innerHTML = `오늘의 평가 : 기준 일수(${period}일)가 상장 기간보다 길어 산정할 수 없습니다.`;
+                evalPanel.style.display = 'block';
             }
-        } else {
-            const speech = document.getElementById('clock-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
-            playSound('다시해보자.wav');
-            
-            document.getElementById('clock-h-input').value = '';
-            document.getElementById('clock-m-input').value = '';
-            document.getElementById('clock-h-input').focus();
-            
-            setTimeout(() => {
-                if (!isAnswered) {
-                    if(speech) speech.innerHTML = "몇 시 몇 분<br>인지<br>알려줄래?";
-                    const charImg = document.getElementById('clock-char');
-                    if(charImg) charImg.src = 'images/셈놀이.png';
-                    playSound('몇시몇분인지알려줄래.wav');
-                }
-            }, 2000);
+
+            renderPriceChart(cachedData.dates, cachedData.prices, smaData, upperBBData, lowerBBData, priceAvgDisparityLineData, avgDisparity, period, upperMult, lowerMult);
+            renderDisparityChart(cachedData.dates, disparityData, disparityBaseLineData, disparityAvgLineData, upperBBDisparityData, lowerBBDisparityData, avgDisparity, maxDisp, minDisp, period, upperMult, lowerMult);
+            populateTable(cachedData.dates, cachedData.prices, displayMulrimData, smaData, upperBBData, lowerBBData, disparityData, period);
         }
-    }
 
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            const appContainer = document.getElementById('app-container');
-            if (appContainer) {
-                appContainer.style.display = 'none';
-                void appContainer.offsetHeight;
-                appContainer.style.display = 'grid';
+        // 공통 X축 눈금 설정 함수: 매년 1월 1일과 근접한 첫 거래일 찾기
+        function getYearlyTicksConfig() {
+            return {
+                autoSkip: false,
+                maxRotation: 0,
+                callback: function(val, index) {
+                    const currentLabel = this.getLabelForValue(val);
+                    if (index === 0) return currentLabel;
+                    const prevLabel = this.getLabelForValue(val - 1);
+                    const currYear = currentLabel.substring(0, 4);
+                    const prevYear = prevLabel.substring(0, 4);
+                    
+                    // 연도가 바뀌는 첫 번째 데이터 포인트에만 연도를 반환
+                    if (currYear !== prevYear) {
+                        return currYear + '-01'; 
+                    }
+                    return null;
+                }
+            };
+        }
+
+        // 공통 X축 세로선(Grid) 설정 함수: 매년 1월 첫 거래일만 옅은 회색 선 긋기
+        function getYearlyGridConfig() {
+            return {
+                display: true,
+                drawOnChartArea: true,
+                color: function(context) {
+                    if (context.tick.label) {
+                        return 'rgba(200, 200, 200, 0.4)'; // 옅은 회색 선
+                    }
+                    return 'rgba(0,0,0,0)'; // 그 외 날짜는 투명
+                }
+            };
+        }
+
+        function renderPriceChart(labels, priceData, smaData, upperBBData, lowerBBData, priceAvgLineData, avgDisparity, period, upperMult, lowerMult) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            if (window.priceChartInstance) window.priceChartInstance.destroy();
+            window.priceChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: `${cachedCompanyName} 수정종가`, data: priceData, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.1, order: 1 },
+                        { label: `평균 이격 위치 (SMA × ${avgDisparity.toFixed(2)})`, data: priceAvgLineData, borderColor: '#000000', borderWidth: 2, pointRadius: 0, tension: 0.1, spanGaps: true, order: 2 },
+                        { label: `${period}일 이동평균선`, data: smaData, borderColor: '#f1c40f', borderWidth: 2, pointRadius: 0, tension: 0.1, spanGaps: true, order: 3 },
+                        { label: `BB 상한 (${upperMult}σ)`, data: upperBBData, borderColor: '#95a5a6', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, tension: 0.1, spanGaps: true, order: 4 },
+                        { label: `BB 하한 (${lowerMult}σ)`, data: lowerBBData, borderColor: '#95a5a6', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, tension: 0.1, spanGaps: true, order: 5 }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false }, 
+                    scales: { 
+                        x: { 
+                            grid: getYearlyGridConfig(), 
+                            ticks: getYearlyTicksConfig() 
+                        }, 
+                        y: { 
+                            type: 'logarithmic', 
+                            display: true, 
+                            position: 'left', 
+                            title: { display: true, text: '가격(로그)', color: '#333' } 
+                        } 
+                    } 
+                }
+            });
+        }
+
+        function renderDisparityChart(labels, disparityData, baseLineData, avgLineData, upperBBDisparityData, lowerBBDisparityData, avgDisparity, maxDisp, minDisp, period, upperMult, lowerMult) {
+            const ctx = document.getElementById('disparityChart').getContext('2d');
+            if (window.disparityChartInstance) window.disparityChartInstance.destroy();
+            window.disparityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [ 
+                        { label: `${period}일 이격 비율`, data: disparityData, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.1, spanGaps: true, fill: true, order: 1 },
+                        { label: `평균 이격도 (${avgDisparity.toFixed(2)}x)`, data: avgLineData, borderColor: '#000000', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, order: 2 },
+                        { label: `이평선 기준 (1.0x)`, data: baseLineData, borderColor: '#f1c40f', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, order: 3 },
+                        { label: `BB 이격 상한 (${upperMult}σ)`, data: upperBBDisparityData, borderColor: '#95a5a6', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, tension: 0.1, spanGaps: true, order: 4 },
+                        { label: `BB 이격 하한 (${lowerMult}σ)`, data: lowerBBDisparityData, borderColor: '#95a5a6', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, tension: 0.1, spanGaps: true, order: 5 }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false }, 
+                    scales: { 
+                        x: { 
+                            grid: getYearlyGridConfig(), 
+                            ticks: getYearlyTicksConfig() 
+                        }, 
+                        y: { 
+                            type: 'linear', 
+                            display: true, 
+                            position: 'right', 
+                            title: { display: true, text: '이격 비율', color: '#3498db' }, 
+                            min: minDisp, 
+                            max: maxDisp 
+                        } 
+                    } 
+                }
+            });
+        }
+
+        function populateTable(dates, prices, displayMulrimData, smaData, upperBBData, lowerBBData, disparityData, period) {
+            const tableBody = document.getElementById('table-body');
+            let htmlContent = '';
+            for (let i = dates.length - 1; i >= 0; i--) {
+                const date = dates[i];
+                const price = prices[i] ? prices[i].toFixed(4) : 'N/A';
+                const mulrim = displayMulrimData[i]; 
+                const sma = smaData[i] !== null ? smaData[i].toFixed(4) : '-';
+                const upperBB = upperBBData[i] !== null ? upperBBData[i].toFixed(4) : '-';
+                const lowerBB = lowerBBData[i] !== null ? lowerBBData[i].toFixed(4) : '-';
+                const disparity = disparityData[i] !== null ? disparityData[i].toFixed(4) : '데이터 부족';
+                htmlContent += `<tr><td>${date}</td><td>${price}</td><td>${mulrim}</td><td>${sma}</td><td>${upperBB}</td><td>${lowerBB}</td><td>${disparity}</td></tr>`;
             }
-        }, 250);
-    });
-</script>
+            tableBody.innerHTML = htmlContent;
+        }
 
+        function downloadCSV() {
+            const table = document.getElementById('data-table');
+            let csvContent = "\uFEFF"; 
+            for (let i = 0; i < table.rows.length; i++) {
+                let row = table.rows[i];
+                let rowData = [];
+                for (let j = 0; j < row.cells.length; j++) {
+                    let cellText = row.cells[j].innerText;
+                    cellText = '"' + cellText.replace(/"/g, '""') + '"';
+                    rowData.push(cellText);
+                }
+                csvContent += rowData.join(",") + "\n";
+            }
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${cachedCompanyName}_일봉데이터_분석.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function openOptimizer() {
+            if (!cachedData) return alert('먼저 데이터를 불러와주세요.');
+            document.getElementById('optimizer-modal').style.display = 'flex';
+            document.getElementById('opt-apply-btn').style.display = 'none';
+            document.getElementById('opt-result-text').innerText = '최적의 기준 일수를 찾기 위해 수백만 번의 시뮬레이션 중입니다...';
+            if (optChartInstance) optChartInstance.destroy();
+            setTimeout(() => { runOptimization(); }, 100);
+        }
+
+        function closeOptimizer() { document.getElementById('optimizer-modal').style.display = 'none'; }
+
+        function getFastR2ForPeriod(period) {
+            const N = cachedData.prices.length;
+            let validX = [], validY = [], sum = 0;
+            for (let i = 0; i < N; i++) {
+                let price = cachedData.prices[i];
+                sum += price;
+                if (i >= period) sum -= cachedData.prices[i - period];
+                if (i >= period - 1) {
+                    let avg = sum / period;
+                    if (avg > 0) {
+                        let disparity = price / avg;
+                        if ((N - 1) - i >= cachedData.maxMulrim && Number.isFinite(disparity)) {
+                            validX.push(disparity); validY.push(cachedData.rawMulrimData[i]);
+                        }
+                    }
+                }
+            }
+            if (validX.length < 30) return 0; 
+            let sumX = 0, sumY = 0;
+            for (let i = 0; i < validX.length; i++) { sumX += validX[i]; sumY += validY[i]; }
+            let meanX = sumX / validX.length, meanY = sumY / validY.length;
+            let covXY = 0, varX = 0, varY = 0;
+            for (let i = 0; i < validX.length; i++) {
+                let dx = validX[i] - meanX, dy = validY[i] - meanY;
+                covXY += dx * dy; varX += dx * dx; varY += dy * dy;
+            }
+            if (varX > 0 && varY > 0) return (covXY / Math.sqrt(varX * varY)) ** 2;
+            return 0;
+        }
+
+        function runOptimization() {
+            const maxTestPeriod = Math.min(3000, cachedData.prices.length - cachedData.maxMulrim - 30);
+            if (maxTestPeriod < 1) return alert("상장 기간이 짧아 데이터를 충분히 확보할 수 없으므로 최적화를 수행할 수 없습니다.") || closeOptimizer();
+
+            let labels = [], r2Data = [], maxR2 = -1, bestPeriod = 1; 
+            for (let p = 1; p <= maxTestPeriod; p += 1) {
+                let r2 = getFastR2ForPeriod(p);
+                labels.push(p); r2Data.push(r2);
+                if (r2 > maxR2) { maxR2 = r2; bestPeriod = p; }
+            }
+
+            bestOptimizedPeriod = bestPeriod;
+            renderOptChart(labels, r2Data, bestPeriod);
+
+            document.getElementById('opt-result-text').innerHTML = `최적화 기준일수는 <span style="color:#e74c3c; font-size:24px;">${bestPeriod}일</span> 입니다.<br><span style="font-size:14px; color:#7f8c8d;">(최대 R² = ${maxR2.toFixed(4)})</span><br><br>적용하시겠습니까?`;
+            document.getElementById('opt-apply-btn').style.display = 'inline-block';
+        }
+
+        function renderOptChart(labels, data, bestPeriod) {
+            const ctx = document.getElementById('optimizerChart').getContext('2d');
+            let pointColors = labels.map(l => l === bestPeriod ? '#e74c3c' : '#3498db');
+            let pointRadius = labels.map(l => l === bestPeriod ? 6 : 0);
+
+            optChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: [{ label: 'R²', data: data, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderWidth: 2, pointBackgroundColor: pointColors, pointBorderColor: pointColors, pointRadius: pointRadius, pointHoverRadius: 6, fill: true }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: '기준 일수' } }, y: { title: { display: true, text: 'R²' } } } }
+            });
+        }
+
+        function applyOptimization() {
+            document.getElementById('ma-period').value = bestOptimizedPeriod;
+            closeOptimizer();
+            calculateAndRender();
+        }
+
+        window.onload = handleRenderClick;
+    </script>
 </body>
 </html>

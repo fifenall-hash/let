@@ -1205,7 +1205,7 @@
         const wrapper = document.createElement('div');
         wrapper.id = 'div-zones-wrapper';
         wrapper.style.position = 'absolute';
-        wrapper.style.left = 'calc(var(--k) * 4.5)';
+        wrapper.style.left = 'calc(var(--k) * 3.7)';
         wrapper.style.top = '0';
         wrapper.style.width = '100%';
         wrapper.style.height = '100%';
@@ -1339,7 +1339,7 @@
         
         if (wrapper) {
             // 💡 1. 오른쪽 영역에 있던 분획구역 전체를 왼쪽(-4.5만큼)으로 수평 이동 (물건들에 딱 들어맞게 됨)
-            wrapper.style.transform = 'translateX(calc(var(--k) * -4.5))';
+            wrapper.style.transform = 'translateX(calc(var(--k) * -3.7))';
 
             // 💡 2. 덮어씌워진 상태로 잠시 유지(2.5초) 후 다시 원래 자리(오른쪽)로 되돌림
             setTimeout(() => {

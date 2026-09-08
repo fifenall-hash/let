@@ -1201,29 +1201,64 @@
 
         const canvas = document.getElementById('div-canvas');
         
-        // 오른쪽 바구니(박스) 레이아웃 생성
-        const cols = (div_n2 <= 3) ? div_n2 : Math.ceil(div_n2 / 2);
-        const rows = (div_n2 <= 3) ? 1 : 2;
-        const boxW = (cols === 3) ? 1.5 : 2.2;
-        const boxH = (rows === 2) ? 1.8 : 3.0;
-        const gridW = cols * boxW + (cols - 1) * 0.2;
-        const gridH = rows * boxH + (rows - 1) * 0.2;
-        const startX = 4.0 + (5.2 - gridW) / 2;
-        const startY = 0.3 + (4.2 - gridH) / 2;
+        // 💡 1. 애니메이션을 위한 분획구역 전체 래퍼 생성 (오른쪽에 4.5만큼 이동된 상태로 시작)
+        const wrapper = document.createElement('div');
+        wrapper.id = 'div-zones-wrapper';
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = 'calc(var(--k) * 4.5)';
+        wrapper.style.top = '0';
+        wrapper.style.width = '100%';
+        wrapper.style.height = '100%';
+        wrapper.style.transition = 'transform 1.5s ease-in-out'; // 부드러운 수평 이동 속도
+        wrapper.style.zIndex = '1';
+        canvas.appendChild(wrapper);
 
-        for (let i = 0; i < div_n2; i++) {
-            let bc = i % cols;
-            let br = Math.floor(i / cols);
-            let box = document.createElement('div');
-            box.style.position = 'absolute';
-            box.style.left = `calc(var(--k) * ${startX + bc * (boxW + 0.2)})`;
-            box.style.top = `calc(var(--k) * ${startY + br * (boxH + 0.2)})`;
-            box.style.width = `calc(var(--k) * ${boxW})`;
-            box.style.height = `calc(var(--k) * ${boxH})`;
-            box.style.border = 'calc(var(--k) * 0.05) dashed #888';
-            box.style.borderRadius = 'calc(var(--k) * 0.2)';
-            box.style.backgroundColor = 'rgba(255,255,255,0.3)';
-            canvas.appendChild(box);
+        const itemsPerGroup = div_n1 / div_n2;
+        const colors = [
+            { border: '#FF5A5A', bg: 'rgba(255, 90, 90, 0.3)' },  // 빨강
+            { border: '#3296FF', bg: 'rgba(50, 150, 255, 0.3)' }, // 파랑
+            { border: '#32CD32', bg: 'rgba(50, 205, 50, 0.3)' },  // 초록
+            { border: '#FFC800', bg: 'rgba(255, 200, 0, 0.3)' },  // 노랑
+            { border: '#9B32D2', bg: 'rgba(155, 50, 210, 0.3)' }  // 보라
+        ];
+
+        // 💡 2. 왼쪽 아이템 배치 모양과 완벽하게 일치하는 분획구역 조각들 생성
+        for (let i = 0; i < div_n1; i++) {
+            const col = Math.floor(i / 5);
+            const row = i % 5;
+            const groupId = Math.floor(i / itemsPerGroup);
+            const color = colors[groupId % colors.length];
+
+            const cell = document.createElement('div');
+            cell.style.position = 'absolute';
+            // 왼쪽 아이템의 중심점과 일치하도록 좌표 계산
+            cell.style.left = `calc(var(--k) * ${0.395 + col * 0.75})`;
+            cell.style.top = `calc(var(--k) * ${0.395 + row * 0.75})`;
+            cell.style.width = `calc(var(--k) * 0.75)`;
+            cell.style.height = `calc(var(--k) * 0.75)`;
+            cell.style.backgroundColor = color.bg;
+            cell.style.boxSizing = 'border-box';
+            
+            // 기본 테두리 생성
+            const borderStyle = `calc(var(--k) * 0.05) solid ${color.border}`;
+            cell.style.borderTop = borderStyle;
+            cell.style.borderBottom = borderStyle;
+            cell.style.borderLeft = borderStyle;
+            cell.style.borderRight = borderStyle;
+
+            // 같은 그룹에 속한 인접한 칸은 맞닿은 테두리를 지워서 하나의 통짜 박스처럼 보이게 만듦
+            if (row > 0 && Math.floor((i - 1) / itemsPerGroup) === groupId) cell.style.borderTop = 'none';
+            if (row < 4 && i + 1 < div_n1 && Math.floor((i + 1) / itemsPerGroup) === groupId) cell.style.borderBottom = 'none';
+            if (col > 0 && Math.floor((i - 5) / itemsPerGroup) === groupId) cell.style.borderLeft = 'none';
+            if (i + 5 < div_n1 && Math.floor((i + 5) / itemsPerGroup) === groupId) cell.style.borderRight = 'none';
+
+            // 바깥쪽 모서리를 살짝 둥글게 처리
+            if (cell.style.borderTop !== 'none' && cell.style.borderLeft !== 'none') cell.style.borderTopLeftRadius = 'calc(var(--k) * 0.2)';
+            if (cell.style.borderTop !== 'none' && cell.style.borderRight !== 'none') cell.style.borderTopRightRadius = 'calc(var(--k) * 0.2)';
+            if (cell.style.borderBottom !== 'none' && cell.style.borderLeft !== 'none') cell.style.borderBottomLeftRadius = 'calc(var(--k) * 0.2)';
+            if (cell.style.borderBottom !== 'none' && cell.style.borderRight !== 'none') cell.style.borderBottomRightRadius = 'calc(var(--k) * 0.2)';
+
+            wrapper.appendChild(cell);
         }
 
         // 전체 아이템 생성
@@ -1231,8 +1266,7 @@
             let img = document.createElement('img');
             img.src = `images/${targetItem}.png`;
             img.className = 'placed-item';
-            img.style.transition = 'all 0.6s ease-in-out';
-            img.style.zIndex = '3';
+            img.style.zIndex = '2'; // 💡 아이템이 분획구역(1)보다 위에 오도록 설정
             canvas.appendChild(img);
             divItems.push(img);
         }
@@ -1244,7 +1278,7 @@
         playSound('똑같이나누면몇개인지알려줄래.wav');
         setActiveInput('div-input');
     }
-
+    
     // 아이템을 왼쪽 공간에 5개씩 세로로 배치 (더하기, 빼기 놀이와 동일 규칙 적용)
     function rearrangeDivItems() {
         const startX1 = 0.5; 
@@ -1298,64 +1332,29 @@
     function showDivisionHint() {
         if (isAnswered || isAnimating) return;
         isAnimating = true; evaluateDivHintButtonState();
-        updateDivBorders(true); // 애니메이션 시작 시 빨간 테두리 숨기기
-
-        const cols = (div_n2 <= 3) ? div_n2 : Math.ceil(div_n2 / 2);
-        const rows = (div_n2 <= 3) ? 1 : 2;
-        const boxW = (cols === 3) ? 1.5 : 2.2;
-        const boxH = (rows === 2) ? 1.8 : 3.0;
-        const gridW = cols * boxW + (cols - 1) * 0.2;
-        const gridH = rows * boxH + (rows - 1) * 0.2;
-        const boxStartX = 4.0 + (5.2 - gridW) / 2;
-        const boxStartY = 0.3 + (4.2 - gridH) / 2;
-
-        const itemsPerBox = div_n1 / div_n2;
-        const inBoxCols = Math.ceil(Math.sqrt(itemsPerBox));
-        const inBoxRows = Math.ceil(itemsPerBox / inBoxCols);
-        
-        // 박스 안에 정렬될 때 아이템 그룹이 박스 중앙에 오도록 오프셋 계산
-        const groupW = (inBoxCols - 1) * 0.45 + 0.54;
-        const groupH = (inBoxRows - 1) * 0.45 + 0.54;
-
-        divItems.forEach((img, i) => {
-            const boxIdx = Math.floor(i / itemsPerBox);
-            const itemIdxInBox = i % itemsPerBox;
-            
-            const bc = boxIdx % cols;
-            const br = Math.floor(boxIdx / cols);
-            const boxLeft = boxStartX + bc * (boxW + 0.2);
-            const boxTop = boxStartY + br * (boxH + 0.2);
-            
-            const offsetX = (boxW - groupW) / 2;
-            const offsetY = (boxH - groupH) / 2;
-            
-            const ic = itemIdxInBox % inBoxCols;
-            const ir = Math.floor(itemIdxInBox / inBoxCols);
-            
-            const targetX = boxLeft + offsetX + ic * 0.45;
-            const targetY = boxTop + offsetY + ir * 0.45;
-            
-            img.dataset.origLeft = img.style.left;
-            img.dataset.origTop = img.style.top;
-            
-            img.style.left = `calc(var(--k) * ${targetX})`;
-            img.style.top = `calc(var(--k) * ${targetY})`;
-        });
+        updateDivBorders(true); // 애니메이션 시작 시 10단위 빨간 테두리 숨기기
 
         const expectedSessionId = currentSessionId;
-        setTimeout(() => {
-            if (expectedSessionId !== currentSessionId || isAnswered) return;
-            divItems.forEach((img) => {
-                img.style.left = img.dataset.origLeft;
-                img.style.top = img.dataset.origTop;
-            });
+        const wrapper = document.getElementById('div-zones-wrapper');
+        
+        if (wrapper) {
+            // 💡 1. 오른쪽 영역에 있던 분획구역 전체를 왼쪽(-4.5만큼)으로 수평 이동 (물건들에 딱 들어맞게 됨)
+            wrapper.style.transform = 'translateX(calc(var(--k) * -4.5))';
+
+            // 💡 2. 덮어씌워진 상태로 잠시 유지(2.5초) 후 다시 원래 자리(오른쪽)로 되돌림
             setTimeout(() => {
                 if (expectedSessionId !== currentSessionId || isAnswered) return;
-                isAnimating = false; 
-                updateDivBorders(); // 애니메이션 종료 후 테두리 다시 보이기
-                evaluateDivHintButtonState();
-            }, 600);
-        }, 2500);
+                wrapper.style.transform = 'translateX(0)'; // 다시 오른쪽으로 복귀
+                
+                // 💡 3. 복귀 애니메이션 완료 후 상태 초기화
+                setTimeout(() => {
+                    if (expectedSessionId !== currentSessionId || isAnswered) return;
+                    isAnimating = false; 
+                    updateDivBorders(); // 숨겼던 빨간 테두리 다시 보이기
+                    evaluateDivHintButtonState();
+                }, 1500); // 복귀 애니메이션에 걸리는 시간
+            }, 2500); 
+        }
     }
 
     function checkDivisionAnswer() {

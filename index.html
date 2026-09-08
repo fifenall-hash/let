@@ -54,8 +54,8 @@
         }
 
         .menu-btn {
-            width: calc(var(--k) * 2.8); padding: calc(var(--k) * 0.27) calc(var(--k) * 0.3);
-            margin: calc(var(--k) * 0.15) 0; font-size: calc(var(--k) * 0.28); 
+            width: calc(var(--k) * 2.8); padding: calc(var(--k) * 0.2) calc(var(--k) * 0.3);
+            margin: calc(var(--k) * 0.1) 0; font-size: calc(var(--k) * 0.28); 
             font-weight: bold; background-color: #e0e0e0; border: none;
             border-radius: calc(var(--k) * 0.2); cursor: pointer;
         }
@@ -176,6 +176,7 @@
                 <button class="menu-btn" onclick="startGame('더하기 놀이')">더하기 놀이</button>
                 <button class="menu-btn" onclick="startGame('빼기 놀이')">빼기 놀이</button>
                 <button class="menu-btn" onclick="startGame('곱하기 놀이')">곱하기 놀이</button>
+                <button class="menu-btn" onclick="startGame('나누기 놀이')">나누기 놀이</button>
                 <button class="menu-btn" onclick="startGame('시계 보기 놀이')">시계 보기 놀이</button>
             </div>
 
@@ -225,53 +226,47 @@
     calculateLayout();
 
     const items = ['단추', '딸기', '블록', '빗', '빵', '수박', '숟가락', '연필', '자동차', '칫솔'];
-    const solvedItems = { '숫자 세기 놀이': [], '더하기 놀이': [], '빼기 놀이': [], '곱하기 놀이': [], '시계 보기 놀이': [] };
+    const solvedItems = { '숫자 세기 놀이': [], '더하기 놀이': [], '빼기 놀이': [], '곱하기 놀이': [], '나누기 놀이': [], '시계 보기 놀이': [] };
 
     let currentGame = null;
 
-    // ==========================================
-    // [더하기 놀이용 전용 상태 변수]
-    // ==========================================
-    let add_n1 = 0;                  // 왼쪽 숫자
-    let add_n2 = 0;                  // 오른쪽 숫자
-    let leftItems = [];              // 왼쪽 배치 아이템 리스트 (DOM 요소)
-    let rightItems = [];             // 오른쪽 배치 아이템 리스트 (DOM 요소)
+    // 공통 상태 변수
     let isAnimating = false;         // 애니메이션 재생 상태
     let isHardMode = false;          // 하드모드(힌트 비활성화) 상태 공통 변수
-    let hiddenCarryMode = false;     // 히든 커맨드(99) 올림 모드 상태
     let isAnswered = false;          // 정답 제출 여부
 
-    // ==========================================
-    // [빼기 놀이용 전용 상태 변수]
-    // ==========================================
-    let sub_n1 = 0;                  // 빼어지는 수 (큰 수)
-    let sub_n2 = 0;                  // 빼는 수 (작은 수)
-    let subLeftItems = [];           // 왼쪽 배치 아이템 리스트 (DOM 요소)
-    let subRightItems = [];          // 오른쪽 배치 아이템 리스트 (DOM 요소, 반전 이미지)
+    // [더하기 놀이용 전용 상태 변수]
+    let add_n1 = 0, add_n2 = 0;
+    let leftItems = [], rightItems = [];
+    let hiddenCarryMode = false;
 
-    // ==========================================
+    // [빼기 놀이용 전용 상태 변수]
+    let sub_n1 = 0, sub_n2 = 0;
+    let subLeftItems = [], subRightItems = [];
+
     // [곱하기 놀이용 전용 상태 변수]
-    // ==========================================
-    let mul_n1 = 0;
-    let mul_n2 = 0;
+    let mul_n1 = 0, mul_n2 = 0;
     let mulCellStates = {};
-    let mulImgObj = null; // 캔버스에 그릴 아이템 이미지 객체
+    let mulImgObj = null;
     let isHintPlaying = false;
-    let currentHintSession = 0; // 힌트 전용 애니메이션 중지용 세션
+    let currentHintSession = 0;
     let mulHintState = { active: false, base: 0, target: 0, step: 0, isADan: true };
 
     const mulColors = {
         1: '#FF0000', 2: '#FFAA00', 3: '#AAFF00', 4: '#00FF00', 5: '#00FFAA', 
         6: '#00AAFF', 7: '#0000FF', 8: '#AA00FF', 9: '#FF00AA', 10: '#FF0000'
     };
-
-    // ==========================================
-    // [시계 보기 놀이용 전용 상태 변수]
-    // ==========================================
-    let clock_h = 0;
-    let clock_m = 0;
-    let isClockHintActive = false; // 힌트 동작 여부
     
+    // [나누기 놀이용 전용 상태 변수]
+    let div_n1 = 0; // 전체 개수
+    let div_n2 = 0; // 나눌 묶음(상자) 개수
+    let divItems = [];
+
+    // [시계 보기 놀이용 전용 상태 변수]
+    let clock_h = 0, clock_m = 0;
+    let isClockHintActive = false;
+    
+    // 공통 진행 변수
     let targetItem = "";
     let targetNumber = 0;
     let placedItemsCount = 0;
@@ -297,22 +292,15 @@
         currentAudio.onended = () => { playSoundSequence(fileNames.slice(1)); };
     }
 
-    // ==========================================
-    // [BGM 자동 재생 및 전체 화면(Fullscreen) 실행 로직]
-    // ==========================================
     function enableFullScreenAndBGM() {
         const bgm = document.getElementById('bgm-player');
         if (bgm && bgm.paused) {
             bgm.play().catch(e => console.log("BGM error", e));
         }
-
         const docElm = document.documentElement;
         if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            if (docElm.requestFullscreen) {
-                docElm.requestFullscreen();
-            } else if (docElm.webkitRequestFullScreen) {
-                docElm.webkitRequestFullScreen(); 
-            }
+            if (docElm.requestFullscreen) docElm.requestFullscreen();
+            else if (docElm.webkitRequestFullScreen) docElm.webkitRequestFullScreen(); 
         }
     }
 
@@ -327,12 +315,10 @@
 
     function setActiveInput(id) {
         activeInputId = id;
-        // 모든 입력창의 강조 효과 초기화
         document.querySelectorAll('.game-input').forEach(el => {
             el.style.border = 'calc(var(--k)*0.05) solid #ccc';
             el.style.boxShadow = 'none';
         });
-        // 선택된 입력창 강조
         const activeEl = document.getElementById(id);
         if (activeEl) {
             activeEl.style.border = 'calc(var(--k)*0.05) solid #ff69b4';
@@ -348,13 +334,10 @@
         if (val === 'back') {
             inputEl.value = inputEl.value.slice(0, -1);
         } else {
-            // 곱하기는 최대 3자리, 나머지는 2자리 제한
             const maxLen = activeInputId.includes('mul') ? 3 : 2;
             if (inputEl.value.length < maxLen) {
                 inputEl.value += val;
             }
-            
-            // 시계 보기 놀이: '시'를 2자리 입력하면 자동으로 '분'으로 포커스 이동
             if (activeInputId === 'clock-h-input' && inputEl.value.length === 2) {
                 setActiveInput('clock-m-input');
             }
@@ -371,26 +354,24 @@
 
     function startGame(gameName) {
         currentSessionId++; 
-        
         currentGame = gameName;
         document.getElementById('banner-frame').style.display = 'grid';
         updateBanner();
 
-        if (gameName === '숫자 세기 놀이') {
-            initCountingGame();
-        } else if (gameName === '더하기 놀이') {
-            initAdditionGame(); 
-        } else if (gameName === '빼기 놀이') {
-            initSubtractionGame(); 
-        } else if (gameName === '곱하기 놀이') {
-            initMultiplicationGame();
-        } else if (gameName === '시계 보기 놀이') {
-            initClockGame();
-        } else {
+        if (gameName === '숫자 세기 놀이') initCountingGame();
+        else if (gameName === '더하기 놀이') initAdditionGame(); 
+        else if (gameName === '빼기 놀이') initSubtractionGame(); 
+        else if (gameName === '곱하기 놀이') initMultiplicationGame();
+        else if (gameName === '나누기 놀이') initDivisionGame();
+        else if (gameName === '시계 보기 놀이') initClockGame();
+        else {
             document.getElementById('game-area').innerHTML = `<h1 style="color: #888; font-size: calc(var(--k) * 0.7);">${gameName} 업데이트 준비 중입니다!</h1>`;
         }
     }
 
+    // ==========================================
+    // [숫자 세기 놀이]
+    // ==========================================
     function initCountingGame() {
         const availableItems = items.filter(i => !solvedItems['숫자 세기 놀이'].includes(i));
         if (availableItems.length === 0) return showCompletionScreen('숫자 세기 놀이');
@@ -398,16 +379,13 @@
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
         targetNumber = Math.floor(Math.random() * 20) + 1;
         placedItemsCount = 0;
-        isAnswered = false; // 연달아 클릭 방지용 초기화
+        isAnswered = false; 
         
-        // 💡 하드 모드 적용 (마지막 3문제)
         isHardMode = solvedItems['숫자 세기 놀이'].length >= (items.length - 3);
         if (isHardMode) {
-            soundEnabled = false;
-            showNumberStatus = false;
+            soundEnabled = false; showNumberStatus = false;
         } else {
-            soundEnabled = true;
-            showNumberStatus = true;
+            soundEnabled = true; showNumberStatus = true;
         }
 
         document.getElementById('game-area').innerHTML = `
@@ -437,13 +415,10 @@
 
     function removeLastItem(e) {
         if(e) e.preventDefault(); 
-        
         const dropZone = document.getElementById('drop-zone');
         const itemsInZone = dropZone.querySelectorAll('.placed-item');
-        
         if(itemsInZone.length > 0) {
-            const lastItem = itemsInZone[itemsInZone.length - 1];
-            dropZone.removeChild(lastItem);
+            dropZone.removeChild(itemsInZone[itemsInZone.length - 1]);
             placedItemsCount--;
             updateRedBorders(); 
             updateCountDisplay();
@@ -453,7 +428,6 @@
     function updateRedBorders() {
         const dropZone = document.getElementById('drop-zone');
         dropZone.querySelectorAll('.red-border').forEach(e => e.remove());
-
         if (placedItemsCount >= 10) {
             const border1 = document.createElement('div');
             border1.className = 'red-border';
@@ -461,7 +435,6 @@
             border1.style.bottom = 'calc(var(--k) * 0.3)'; 
             dropZone.appendChild(border1);
         }
-        
         if (placedItemsCount >= 20) {
             const border2 = document.createElement('div');
             border2.className = 'red-border';
@@ -474,25 +447,20 @@
     function updateCountDisplay() {
         let countDisplay = document.getElementById('count-display');
         const dropZone = document.getElementById('drop-zone');
-
         if (!countDisplay) {
             countDisplay = document.createElement('div');
             countDisplay.id = 'count-display';
             dropZone.appendChild(countDisplay);
         }
-
         if (!showNumberStatus || placedItemsCount === 0) {
             countDisplay.style.display = 'none';
             return;
         }
-
         countDisplay.style.display = 'block';
         countDisplay.innerText = placedItemsCount;
-
         const index = placedItemsCount - 1; 
         const col = Math.floor(index / 5); 
         const row = index % 5;             
-
         const baseLeft = `calc(50% - calc(var(--k) * 1.395) + calc(var(--k) * 0.75 * ${col}))`;
         countDisplay.style.left = `calc(${baseLeft} + calc(var(--k) * 0.27))`;
         countDisplay.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row} + calc(var(--k) * 0.55))`;
@@ -500,24 +468,18 @@
 
     function placeItem(itemName) {
         if (placedItemsCount >= 20 || itemName !== targetItem) return;
-        
         placedItemsCount++;
         const img = document.createElement('img');
         img.src = `images/${itemName}.png`;
         img.className = 'placed-item';
-        
         const index = placedItemsCount - 1; 
         const col = Math.floor(index / 5); 
         const row = index % 5;             
-
         img.style.left = `calc(50% - calc(var(--k) * 1.395) + calc(var(--k) * 0.75 * ${col}))`;
         img.style.bottom = `calc(var(--k) * 0.4 + var(--k) * 0.65 * ${row})`;
-
         document.getElementById('drop-zone').appendChild(img);
-        
         updateRedBorders();
         updateCountDisplay();
-        
         if (soundEnabled) {
             let soundFileName = soundType === "고유어" ? `${placedItemsCount}[고유어].wav` : `${placedItemsCount}.wav`;
             playSound(soundFileName);
@@ -527,35 +489,18 @@
     function replayQuestion() { playSoundSequence([`${targetItem}.wav`, `${targetNumber}개줄래.wav`]); }
 
     function checkCountingAnswer() {
-        if (isAnswered) return; // 연달아 클릭 방지
-        
+        if (isAnswered) return;
         const dropZoneItems = document.querySelectorAll('.placed-item'); 
-        let isCorrect = (dropZoneItems.length === targetNumber);
-        
-        if (isCorrect) {
-            isAnswered = true; // 정답 처리 상태로 잠금
-            
+        if (dropZoneItems.length === targetNumber) {
+            isAnswered = true; 
             const dropZone = document.getElementById('drop-zone');
             dropZone.style.backgroundImage = "url('images/숫자세기고마워.png')";
-
             const countDisplay = document.getElementById('count-display');
             if(countDisplay) countDisplay.style.display = 'none';
             dropZone.querySelectorAll('.red-border').forEach(e => e.style.display = 'none');
-
             solvedItems['숫자 세기 놀이'].push(targetItem);
             updateBanner();
-            
-            if (solvedItems['숫자 세기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('숫자 세기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initCountingGame, 2000);
-            }
+            checkAllCompleted('숫자 세기 놀이');
         } else {
             playSound('다시해보자.wav');
             document.querySelector('.question-text').innerText = "다시 해보자.";
@@ -579,112 +524,96 @@
         });
     }
 
-    // 💡 모든 메뉴 완료 점검 및 개별 완료 화면 렌더링 로직
+    function checkAllCompleted(gameName) {
+        if (solvedItems[gameName].length === items.length) {
+            if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
+                playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
+            } else {
+                playSound('다했어고마워.wav');
+            }
+            setTimeout(() => showCompletionScreen(gameName), 2000);
+        } else {
+            playSound('고마워.wav');
+            if(gameName === '숫자 세기 놀이') setTimeout(initCountingGame, 2000);
+            else if(gameName === '더하기 놀이') setTimeout(initAdditionGame, 2000);
+            else if(gameName === '빼기 놀이') setTimeout(initSubtractionGame, 2000);
+            else if(gameName === '곱하기 놀이') setTimeout(initMultiplicationGame, 2000);
+            else if(gameName === '나누기 놀이') setTimeout(initDivisionGame, 2000);
+            else if(gameName === '시계 보기 놀이') setTimeout(initClockGame, 2000);
+        }
+    }
+
     function showCompletionScreen(gameName) {
         document.querySelectorAll('.menu-btn').forEach(btn => { 
             if(btn.innerText.includes(gameName)) btn.classList.add('completed'); 
         });
-
         const allCompleted = Object.values(solvedItems).every(arr => arr.length === items.length);
-
         if (allCompleted) {
-            // 모든 메뉴를 완료했을 때 화면 전체에 안녕.png 출력
             const overlay = document.createElement('div');
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100vw';
-            overlay.style.height = '100vh';
-            overlay.style.backgroundColor = 'white'; 
-            overlay.style.zIndex = '9999';
-            overlay.style.display = 'flex';
-            overlay.style.justifyContent = 'center';
-            overlay.style.alignItems = 'center';
+            overlay.style.position = 'fixed'; overlay.style.top = '0'; overlay.style.left = '0';
+            overlay.style.width = '100vw'; overlay.style.height = '100vh';
+            overlay.style.backgroundColor = 'white'; overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex'; overlay.style.justifyContent = 'center'; overlay.style.alignItems = 'center';
             overlay.innerHTML = `<img src="images/안녕.png" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="모두 완료">`;
             document.body.appendChild(overlay);
             return;
         }
-
         const imgSrc = gameName === '숫자 세기 놀이' ? 'images/숫자세기완료.png' : 'images/셈놀이완료.png';
         const imgStyle = gameName === '숫자 세기 놀이' 
             ? 'width: calc(var(--k) * 8); height: calc(var(--k) * 6); object-fit: contain;'
             : 'width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain;';
-
         document.getElementById('game-area').innerHTML = `
             <h1 style="font-size: calc(var(--k) * 1); color: black; margin-bottom: calc(var(--k) * 0.2); margin-top: 0;">다했어. 고마워!</h1>
             <img src="${imgSrc}" style="${imgStyle}" alt="완료">
         `;
     }
 
-    // =========================================================================
-    // [더하기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
+    // ==========================================
+    // [더하기 놀이]
+    // ==========================================
     function initAdditionGame() {
         const availableItems = items.filter(i => !solvedItems['더하기 놀이'].includes(i));
         if (availableItems.length === 0) return showCompletionScreen('더하기 놀이');
         
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isAnimating = false;
-        leftItems = [];
-        rightItems = [];
+        isAnswered = false; isAnimating = false;
+        leftItems = []; rightItems = [];
         
         isHardMode = solvedItems['더하기 놀이'].length >= (items.length - 3);
 
         let validPairs = [];
         if (hiddenCarryMode) {
-            for (let a = 1; a < 10; a++) {
-                for (let b = 1; b < 10; b++) {
-                    if (a + b > 10) validPairs.push([a, b]);
-                }
-            }
+            for (let a = 1; a < 10; a++) for (let b = 1; b < 10; b++) if (a + b > 10) validPairs.push([a, b]);
         } else {
-            for (let a = 1; a < 20; a++) {
-                for (let b = 1; b <= 20 - a; b++) {
-                    validPairs.push([a, b]);
-                }
-            }
+            for (let a = 1; a < 20; a++) for (let b = 1; b <= 20 - a; b++) validPairs.push([a, b]);
         }
         
         const pair = validPairs[Math.floor(Math.random() * validPairs.length)];
-        add_n1 = pair[0];
-        add_n2 = pair[1];
+        add_n1 = pair[0]; add_n2 = pair[1];
 
         document.getElementById('game-area').innerHTML = `
-            <style>
-                #add-input::-webkit-outer-spin-button,
-                #add-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                #add-input { -moz-appearance: textfield; }
-            </style>
+            <style> #add-input::-webkit-outer-spin-button, #add-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #add-input { -moz-appearance: textfield; } </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
                     <div id="add-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         모두 더해서<br>몇 개인지<br>알려줄래?
                     </div>
                     <img id="add-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
-                
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
                         <div id="add-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
-                        ${isHardMode ? 
-                            `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
-                            `<button id="hint-btn" onclick="showAdditionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
-                        }
+                        ${isHardMode ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : `<button id="hint-btn" onclick="showAdditionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`}
                     </div>
-                    
                     <div id="add-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
                         <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">+</div>
                     </div>
-                    
                     <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
                         <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                             <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${add_n1} + ${add_n2} = </div>
-                            <input type="text" id="add-input" class="game-input" readonly onclick="setActiveInput('add-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
+                            <input type="text" id="add-input" class="game-input" readonly onclick="setActiveInput('add-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); outline: none; cursor: pointer;">
                             <button class="submit-btn" onclick="checkAdditionAnswer()">확인</button>
                         </div>
                         ${getCustomKeypadHTML()}
@@ -694,7 +623,6 @@
         `;
         
         const canvas = document.getElementById('add-canvas');
-        
         const createItem = (arr) => {
             let img = document.createElement('img');
             img.src = `images/${targetItem}.png`;
@@ -703,9 +631,8 @@
             canvas.appendChild(img);
             arr.push(img);
         };
-
-        for(let i = 0; i < add_n1; i++) createItem(leftItems);
-        for(let i = 0; i < add_n2; i++) createItem(rightItems);
+        for(let i=0; i<add_n1; i++) createItem(leftItems);
+        for(let i=0; i<add_n2; i++) createItem(rightItems);
 
         rearrangeAdditionItems();
         updateAdditionBorders();
@@ -716,50 +643,32 @@
     }
 
     function rearrangeAdditionItems() {
-        const startX1 = 0.5; 
-        const startX2 = 4.2; 
-        const startY = 0.5;  
-
+        const startX1 = 0.5, startX2 = 4.2, startY = 0.5;  
         leftItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX1 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
+            img.style.left = `calc(var(--k) * ${startX1 + Math.floor(i/5) * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + (i%5) * 0.75})`;
         });
-
         rightItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX2 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
+            img.style.left = `calc(var(--k) * ${startX2 + Math.floor(i/5) * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + (i%5) * 0.75})`;
         });
     }
 
-    function updateAdditionBorders(previewLeft = null, previewRight = null) {
+    function updateAdditionBorders(previewLeft=null, previewRight=null) {
         const canvas = document.getElementById('add-canvas');
         if (!canvas) return;
-        
         canvas.querySelectorAll('.add-border').forEach(e => e.remove());
-
         const lCount = previewLeft !== null ? previewLeft : leftItems.length;
         const rCount = previewRight !== null ? previewRight : rightItems.length;
-
-        const startX1 = 0.5;
-        const startX2 = 4.2;
-        const startY = 0.5;
-
+        const startX1 = 0.5, startX2 = 4.2, startY = 0.5;
         const createBorder = (x, y) => {
             const border = document.createElement('div');
             border.className = 'add-border red-border'; 
-            
             border.style.left = `calc(var(--k) * ${x - 0.12})`;
             border.style.top = `calc(var(--k) * ${y - 0.15})`;
-            border.style.width = `calc(var(--k) * 1.55)`;
-            border.style.height = `calc(var(--k) * 3.85)`;
-            
+            border.style.width = `calc(var(--k) * 1.55)`; border.style.height = `calc(var(--k) * 3.85)`;
             canvas.appendChild(border);
         };
-
         if (lCount >= 10) createBorder(startX1, startY);
         if (lCount === 20) createBorder(startX1 + 1.5, startY);
         if (rCount >= 10) createBorder(startX2, startY);
@@ -770,93 +679,51 @@
         const hintBtn = document.getElementById('hint-btn');
         const instLabel = document.getElementById('add-instruction');
         if (!hintBtn) return;
-
-        if (isHardMode || isAnimating) {
-            hintBtn.disabled = true;
-            hintBtn.style.backgroundColor = '#e0e0e0';
-            return;
-        }
-
-        const lCount = leftItems.length;
-        const rCount = rightItems.length;
-        const totalCount = lCount + rCount;
-        
-        if (lCount >= 10 || rCount >= 10 || lCount === 0 || rCount === 0 || totalCount <= 10) {
-            hintBtn.disabled = true;
-            hintBtn.style.backgroundColor = '#e0e0e0';
-            if (instLabel) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
+        const lCount = leftItems.length, rCount = rightItems.length;
+        if (isHardMode || isAnimating || lCount>=10 || rCount>=10 || lCount===0 || rCount===0 || (lCount+rCount)<=10) {
+            hintBtn.disabled = true; hintBtn.style.backgroundColor = '#e0e0e0';
+            if (instLabel && !isHardMode) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
         } else {
-            hintBtn.disabled = false;
-            hintBtn.style.backgroundColor = '#87CEEB';
+            hintBtn.disabled = false; hintBtn.style.backgroundColor = '#87CEEB';
             if (instLabel) instLabel.innerText = "💡 '힌트 보기' 버튼을 눌러보세요!";
         }
     }
 
     function showAdditionHint() {
         if (isAnswered || isAnimating) return;
-
-        const lCount = leftItems.length;
-        const rCount = rightItems.length;
-        
-        if (lCount >= 10 || rCount >= 10 || lCount === 0 || rCount === 0 || (lCount + rCount) <= 10) return;
-
-        isAnimating = true;
-        evaluateHintButtonState();
+        const lCount = leftItems.length, rCount = rightItems.length;
+        if (lCount>=10 || rCount>=10 || lCount===0 || rCount===0 || (lCount+rCount)<=10) return;
+        isAnimating = true; evaluateHintButtonState();
 
         const isSpecialCase = (lCount===6 && rCount===6) || (lCount===6 && rCount===7) || (lCount===6 && rCount===8) || (lCount===7 && rCount===6) || (lCount===7 && rCount===7) || (lCount===8 && rCount===6);
-
         let srcList, tgtList, moveAmt;
-        if (lCount < rCount) {
-            srcList = leftItems; tgtList = rightItems; moveAmt = 10 - rCount;
-        } else {
-            srcList = rightItems; tgtList = leftItems; moveAmt = 10 - lCount;
-        }
+        if (lCount < rCount) { srcList = leftItems; tgtList = rightItems; moveAmt = 10 - rCount; }
+        else { srcList = rightItems; tgtList = leftItems; moveAmt = 10 - lCount; }
 
         moveAmt = Math.min(moveAmt, srcList.length);
         let itemsToMove = isSpecialCase ? srcList.slice(0, moveAmt) : srcList.slice(-moveAmt);
         const isLeftTarget = (tgtList === leftItems);
-        
         const startX_tgt = isLeftTarget ? 0.5 : 4.2;
         const startY = 0.5;
 
         itemsToMove.forEach((img, i) => {
             const targetIdx = tgtList.length + i;
-            const col = Math.floor(targetIdx / 5);
-            const row = targetIdx % 5;
-            
-            img.dataset.origLeft = img.style.left;
-            img.dataset.origTop = img.style.top;
-            
-            img.style.left = `calc(var(--k) * ${startX_tgt + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
+            img.dataset.origLeft = img.style.left; img.dataset.origTop = img.style.top;
+            img.style.left = `calc(var(--k) * ${startX_tgt + Math.floor(targetIdx/5) * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + (targetIdx%5) * 0.75})`;
         });
 
         const expectedSessionId = currentSessionId; 
-
         setTimeout(() => {
-            if (expectedSessionId !== currentSessionId) return;
-            if (isAnswered) return;
-            
-            let previewLeft = lCount + (isLeftTarget ? moveAmt : -moveAmt);
-            let previewRight = rCount + (isLeftTarget ? -moveAmt : moveAmt);
-            updateAdditionBorders(previewLeft, previewRight);
-
+            if (expectedSessionId !== currentSessionId || isAnswered) return;
+            updateAdditionBorders(lCount + (isLeftTarget ? moveAmt : -moveAmt), rCount + (isLeftTarget ? -moveAmt : moveAmt));
             setTimeout(() => {
-                if (expectedSessionId !== currentSessionId) return;
-                if (isAnswered) return;
-                
+                if (expectedSessionId !== currentSessionId || isAnswered) return;
                 updateAdditionBorders(); 
-                
-                itemsToMove.forEach(img => {
-                    img.style.left = img.dataset.origLeft;
-                    img.style.top = img.dataset.origTop;
-                });
-
+                itemsToMove.forEach(img => { img.style.left = img.dataset.origLeft; img.style.top = img.dataset.origTop; });
                 setTimeout(() => {
                     if (expectedSessionId !== currentSessionId) return; 
-                    
-                    isAnimating = false;
-                    evaluateHintButtonState();
+                    isAnimating = false; evaluateHintButtonState();
                 }, 500); 
             }, 2000);
         }, 500); 
@@ -869,117 +736,72 @@
 
         if (userInput === '99') {
             hiddenCarryMode = !hiddenCarryMode; 
-            const beepAudio = new Audio('sounds_basic/beep.wav');
-            beepAudio.play().catch(e => console.log("Beep error:", e));
-            inputEl.value = '';
-            initAdditionGame();
-            return;
+            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e));
+            inputEl.value = ''; initAdditionGame(); return;
         }
 
         if (userInput === '') return;
-
         if (parseInt(userInput) === (add_n1 + add_n2)) {
             isAnswered = true;
-            
-            const charImg = document.getElementById('add-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('add-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
+            document.getElementById('add-char').src = 'images/셈놀이고마워.png';
+            document.getElementById('add-speech').innerHTML = "고마워!";
             solvedItems['더하기 놀이'].push(targetItem);
             updateBanner();
-
-            if (solvedItems['더하기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('더하기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initAdditionGame, 2000);
-            }
+            checkAllCompleted('더하기 놀이');
         } else {
-            const speech = document.getElementById('add-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
+            document.getElementById('add-speech').innerHTML = "다시<br>해보자.";
             playSound('다시해보자.wav');
-            
             inputEl.value = '';
-            
-            setTimeout(restoreAddQuestionText, 2000);
+            setTimeout(() => {
+                if (!isAnswered) {
+                    document.getElementById('add-speech').innerHTML = "모두 더해서<br>몇 개인지<br>알려줄래?";
+                    document.getElementById('add-char').src = 'images/셈놀이.png';
+                    playSound('모두더해서몇개인지알려줄래.wav');
+                }
+            }, 2000);
         }
     }
 
-    function restoreAddQuestionText() {
-        if (!isAnswered) {
-            const speech = document.getElementById('add-speech');
-            if(speech) speech.innerHTML = "모두 더해서<br>몇 개인지<br>알려줄래?";
-            
-            const charImg = document.getElementById('add-char');
-            if(charImg) charImg.src = 'images/셈놀이.png';
-            
-            playSound('모두더해서몇개인지알려줄래.wav');
-        }
-    }
-
-    // =========================================================================
-    // [빼기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
+    // ==========================================
+    // [빼기 놀이]
+    // ==========================================
     function initSubtractionGame() {
         const availableItems = items.filter(i => !solvedItems['빼기 놀이'].includes(i));
         if (availableItems.length === 0) return showCompletionScreen('빼기 놀이');
         
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isAnimating = false;
-        subLeftItems = [];
-        subRightItems = [];
+        isAnswered = false; isAnimating = false;
+        subLeftItems = []; subRightItems = [];
         
         isHardMode = solvedItems['빼기 놀이'].length >= (items.length - 3);
 
         let n_a = Math.floor(Math.random() * 20) + 1;
         let n_b = Math.floor(Math.random() * 20) + 1;
-        sub_n1 = Math.max(n_a, n_b);
-        sub_n2 = Math.min(n_a, n_b);
+        sub_n1 = Math.max(n_a, n_b); sub_n2 = Math.min(n_a, n_b);
 
         document.getElementById('game-area').innerHTML = `
-            <style>
-                #sub-input::-webkit-outer-spin-button,
-                #sub-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                #sub-input { -moz-appearance: textfield; }
-                .inverted-item { filter: invert(1); }
-            </style>
+            <style> #sub-input::-webkit-outer-spin-button, #sub-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #sub-input { -moz-appearance: textfield; } .inverted-item { filter: invert(1); } </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
                     <div id="sub-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         빼고 나면<br>몇 개인지<br>알려줄래?
                     </div>
                     <img id="sub-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
-                
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
                         <div id="sub-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
-                        ${isHardMode ? 
-                            `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : 
-                            `<button id="sub-hint-btn" onclick="showSubtractionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
-                        }
+                        ${isHardMode ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : `<button id="sub-hint-btn" onclick="showSubtractionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`}
                     </div>
-                    
                     <div id="sub-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
                         <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">-</div>
                     </div>
-                    
                     <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
                         <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                             <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${sub_n1} - ${sub_n2} = </div>
-                            <input type="text" id="sub-input" class="game-input" readonly onclick="setActiveInput('sub-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
+                            <input type="text" id="sub-input" class="game-input" readonly onclick="setActiveInput('sub-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); outline: none; cursor: pointer;">
                             <button class="submit-btn" onclick="checkSubtractionAnswer()">확인</button>
                         </div>
                         ${getCustomKeypadHTML()}
@@ -989,7 +811,6 @@
         `;
 
         const canvas = document.getElementById('sub-canvas');
-        
         const createItem = (arr, isInverted) => {
             let img = document.createElement('img');
             img.src = `images/${targetItem}.png`;
@@ -998,61 +819,33 @@
             canvas.appendChild(img);
             arr.push(img);
         };
+        for(let i=0; i<sub_n1; i++) createItem(subLeftItems, false);
+        for(let i=0; i<sub_n2; i++) createItem(subRightItems, true);
 
-        for(let i = 0; i < sub_n1; i++) createItem(subLeftItems, false);
-        for(let i = 0; i < sub_n2; i++) createItem(subRightItems, true);
-
-        rearrangeSubItems();
-        updateSubBorders();
-        evaluateSubHintButtonState();
-
-        playSound('빼고나면몇개인지알려줄래.wav');
-        setActiveInput('sub-input');
+        rearrangeSubItems(); updateSubBorders(); evaluateSubHintButtonState();
+        playSound('빼고나면몇개인지알려줄래.wav'); setActiveInput('sub-input');
     }
 
     function rearrangeSubItems() {
-        const startX1 = 0.5; 
-        const startX2 = 4.2; 
-        const startY = 0.5;  
-
-        subLeftItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX1 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
-
-        subRightItems.forEach((img, i) => {
-            const col = Math.floor(i / 5);
-            const row = i % 5;
-            img.style.left = `calc(var(--k) * ${startX2 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
-        });
+        const startX1 = 0.5, startX2 = 4.2, startY = 0.5;  
+        subLeftItems.forEach((img, i) => { img.style.left = `calc(var(--k) * ${startX1 + Math.floor(i/5) * 0.75})`; img.style.top = `calc(var(--k) * ${startY + (i%5) * 0.75})`; });
+        subRightItems.forEach((img, i) => { img.style.left = `calc(var(--k) * ${startX2 + Math.floor(i/5) * 0.75})`; img.style.top = `calc(var(--k) * ${startY + (i%5) * 0.75})`; });
     }
 
-    function updateSubBorders(previewLeft = null, previewRight = null) {
+    function updateSubBorders(previewLeft=null, previewRight=null) {
         const canvas = document.getElementById('sub-canvas');
         if (!canvas) return;
-        
         canvas.querySelectorAll('.sub-border').forEach(e => e.remove());
-
         const lCount = previewLeft !== null ? previewLeft : subLeftItems.length;
         const rCount = previewRight !== null ? previewRight : subRightItems.length;
-
-        const startX1 = 0.5;
-        const startX2 = 4.2;
-        const startY = 0.5;
-
+        const startX1 = 0.5, startX2 = 4.2, startY = 0.5;
         const createBorder = (x, y) => {
             const border = document.createElement('div');
             border.className = 'sub-border red-border'; 
-            border.style.left = `calc(var(--k) * ${x - 0.12})`;
-            border.style.top = `calc(var(--k) * ${y - 0.15})`;
-            border.style.width = `calc(var(--k) * 1.55)`;
-            border.style.height = `calc(var(--k) * 3.85)`;
+            border.style.left = `calc(var(--k) * ${x - 0.12})`; border.style.top = `calc(var(--k) * ${y - 0.15})`;
+            border.style.width = `calc(var(--k) * 1.55)`; border.style.height = `calc(var(--k) * 3.85)`;
             canvas.appendChild(border);
         };
-
         if (lCount >= 10) createBorder(startX1, startY);
         if (lCount === 20) createBorder(startX1 + 1.5, startY);
         if (rCount >= 10) createBorder(startX2, startY);
@@ -1063,88 +856,50 @@
         const hintBtn = document.getElementById('sub-hint-btn');
         const instLabel = document.getElementById('sub-instruction');
         if (!hintBtn) return;
-
         if (isHardMode || isAnimating || subRightItems.length === 0) {
-            hintBtn.disabled = true;
-            hintBtn.style.backgroundColor = '#e0e0e0';
-            if (instLabel && subRightItems.length === 0) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
+            hintBtn.disabled = true; hintBtn.style.backgroundColor = '#e0e0e0';
+            if (instLabel && subRightItems.length===0 && !isHardMode) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
         } else {
-            hintBtn.disabled = false;
-            hintBtn.style.backgroundColor = '#87CEEB';
+            hintBtn.disabled = false; hintBtn.style.backgroundColor = '#87CEEB';
             if (instLabel) instLabel.innerText = "💡 '힌트 보기' 버튼을 눌러보세요!";
         }
     }
 
     function showSubtractionHint() {
         if (isAnswered || isAnimating || subRightItems.length === 0) return;
-
-        isAnimating = true;
-        evaluateSubHintButtonState();
-
+        isAnimating = true; evaluateSubHintButtonState();
         updateSubBorders(subLeftItems.length, 0); 
 
         const numToCancel = subRightItems.length;
         const remain = subLeftItems.length - numToCancel;
-        
         const startRow = Math.floor((subLeftItems.length - 1) / 5);
         const endRow = remain <= 0 ? -1 : Math.floor((remain - 1) / 5);
         const isSpecialCase = (startRow > endRow) && (remain % 5 !== 0);
 
-        let leftTargets = [];
-        if (isSpecialCase) {
-            if (remain > 10) {
-                leftTargets = subLeftItems.slice(10, 10 + numToCancel);
-            } else {
-                leftTargets = subLeftItems.slice(0, numToCancel);
-            }
-        } else {
-            leftTargets = subLeftItems.slice(-numToCancel);
-        }
+        let leftTargets = isSpecialCase ? (remain > 10 ? subLeftItems.slice(10, 10 + numToCancel) : subLeftItems.slice(0, numToCancel)) : subLeftItems.slice(-numToCancel);
 
         subRightItems.forEach((rItem, i) => {
-            const lItem = leftTargets[i];
-            rItem.dataset.origLeft = rItem.style.left;
-            rItem.dataset.origTop = rItem.style.top;
-            
-            rItem.style.left = lItem.style.left;
-            rItem.style.top = lItem.style.top;
+            rItem.dataset.origLeft = rItem.style.left; rItem.dataset.origTop = rItem.style.top;
+            rItem.style.left = leftTargets[i].style.left; rItem.style.top = leftTargets[i].style.top;
         });
 
         const expectedSessionId = currentSessionId;
-
         setTimeout(() => {
-            if (expectedSessionId !== currentSessionId) return; 
-            if (isAnswered) return;
-            
+            if (expectedSessionId !== currentSessionId || isAnswered) return;
             subRightItems.forEach(rItem => rItem.style.opacity = "0");
             leftTargets.forEach(lItem => lItem.style.opacity = "0");
-            
-            const previewLeftCount = subLeftItems.length - subRightItems.length;
-            updateSubBorders(previewLeftCount, 0);
+            updateSubBorders(subLeftItems.length - subRightItems.length, 0);
 
             setTimeout(() => {
-                if (expectedSessionId !== currentSessionId) return; 
-                if (isAnswered) return;
-                
+                if (expectedSessionId !== currentSessionId || isAnswered) return;
                 subRightItems.forEach(rItem => rItem.style.opacity = "1");
                 leftTargets.forEach(lItem => lItem.style.opacity = "1");
-                
                 setTimeout(() => {
-                    if (expectedSessionId !== currentSessionId) return; 
-                    if (isAnswered) return;
-                    
-                    subRightItems.forEach(rItem => {
-                        rItem.style.left = rItem.dataset.origLeft;
-                        rItem.style.top = rItem.dataset.origTop;
-                    });
-
+                    if (expectedSessionId !== currentSessionId || isAnswered) return;
+                    subRightItems.forEach(rItem => { rItem.style.left = rItem.dataset.origLeft; rItem.style.top = rItem.dataset.origTop; });
                     setTimeout(() => {
-                        if (expectedSessionId !== currentSessionId) return; 
-                        if (isAnswered) return;
-                        
-                        updateSubBorders(); 
-                        isAnimating = false;
-                        evaluateSubHintButtonState();
+                        if (expectedSessionId !== currentSessionId || isAnswered) return;
+                        updateSubBorders(); isAnimating = false; evaluateSubHintButtonState();
                     }, 500);
                 }, 100); 
             }, 2000);
@@ -1155,71 +910,42 @@
         if (isAnswered) return;
         const inputEl = document.getElementById('sub-input');
         const userInput = inputEl.value.trim();
-
         if (userInput === '') return;
 
         if (parseInt(userInput) === (sub_n1 - sub_n2)) {
             isAnswered = true;
-            
-            const charImg = document.getElementById('sub-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('sub-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
+            document.getElementById('sub-char').src = 'images/셈놀이고마워.png';
+            document.getElementById('sub-speech').innerHTML = "고마워!";
             solvedItems['빼기 놀이'].push(targetItem);
             updateBanner();
-
-            if (solvedItems['빼기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('빼기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initSubtractionGame, 2000);
-            }
+            checkAllCompleted('빼기 놀이');
         } else {
-            const speech = document.getElementById('sub-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
+            document.getElementById('sub-speech').innerHTML = "다시<br>해보자.";
             playSound('다시해보자.wav');
-            
             inputEl.value = '';
-            
-            setTimeout(restoreSubQuestionText, 2000);
+            setTimeout(() => {
+                if (!isAnswered) {
+                    document.getElementById('sub-speech').innerHTML = "빼고 나면<br>몇 개인지<br>알려줄래?";
+                    document.getElementById('sub-char').src = 'images/셈놀이.png';
+                    playSound('빼고나면몇개인지알려줄래.wav');
+                }
+            }, 2000);
         }
     }
 
-    function restoreSubQuestionText() {
-        if (!isAnswered) {
-            const speech = document.getElementById('sub-speech');
-            if(speech) speech.innerHTML = "빼고 나면<br>몇 개인지<br>알려줄래?";
-            
-            const charImg = document.getElementById('sub-char');
-            if(charImg) charImg.src = 'images/셈놀이.png';
-            
-            playSound('빼고나면몇개인지알려줄래.wav');
-        }
-    }
-
-    // =========================================================================
-    // [곱하기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
+    // ==========================================
+    // [곱하기 놀이]
+    // ==========================================
     function initMultiplicationGame() {
         const availableItems = items.filter(i => !solvedItems['곱하기 놀이'].includes(i));
         if (availableItems.length === 0) return showCompletionScreen('곱하기 놀이');
         
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isHintPlaying = false;
-        mulCellStates = {};
-        mulHintState = { active: false };
+        isAnswered = false; isHintPlaying = false;
+        mulCellStates = {}; mulHintState = { active: false };
 
         mul_n1 = Math.floor(Math.random() * 10) + 1;
         mul_n2 = Math.floor(Math.random() * 10) + 1;
-        
         isHardMode = solvedItems['곱하기 놀이'].length >= (items.length - 3);
 
         mulImgObj = new Image();
@@ -1227,43 +953,31 @@
         mulImgObj.onload = renderMulBoard; 
 
         document.getElementById('game-area').innerHTML = `
-            <style>
-                #mul-input::-webkit-outer-spin-button,
-                #mul-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                #mul-input { -moz-appearance: textfield; }
-            </style>
+            <style> #mul-input::-webkit-outer-spin-button, #mul-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #mul-input { -moz-appearance: textfield; } </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
                     <div id="mul-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
                         곱하면<br>몇 개인지<br>알려줄래?
                     </div>
                     <img id="mul-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
-                
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
                         <div id="mul-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
                             ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 마름모 칸을 클릭하거나<br>'단 실행'을 눌러보세요!"}
                         </div>
                         <div style="display: flex; align-items: center; gap: calc(var(--k) * 0.1);">
-                            ${isHardMode 
-                                ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` 
-                                : `<button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
-                                   <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>`
-                            }
+                            ${isHardMode ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : `<button id="mul-hint-btn-b" onclick="executeDanHint(${mul_n2}, ${mul_n1}, false)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #FFB6C1; border: none; border-radius: calc(var(--k)*0.1);">${mul_n2}단 실행</button>
+                                   <button id="mul-hint-btn-a" onclick="executeDanHint(${mul_n1}, ${mul_n2}, true)" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">${mul_n1}단 실행</button>`}
                         </div>
                     </div>
-                    
                     <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
                         <canvas id="mul-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;" onclick="onMulCanvasClick(event)"></canvas>
                     </div>
-                    
                     <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
                         <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
                             <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${mul_n1} × ${mul_n2} = </div>
-                            <input type="text" id="mul-input" class="game-input" readonly onclick="setActiveInput('mul-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #333; outline: none; cursor: pointer;">
+                            <input type="text" id="mul-input" class="game-input" readonly onclick="setActiveInput('mul-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); outline: none; cursor: pointer;">
                             <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkMultiplicationAnswer()">확인</button>
                         </div>
                         ${getCustomKeypadHTML()}
@@ -1283,121 +997,59 @@
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const a = mul_n1;
-        const b = mul_n2;
-        
-        const startX = 400;
-        const dx = 34; 
-        const dy = 28; 
-        
+        const a = mul_n1, b = mul_n2;
+        const startX = 400, dx = 34, dy = 28; 
         const startY = 40 + (10 - Math.max(a, b)) * 20; 
-        
         const R = (Math.hypot(dx, dy) / 2) * 0.9;
-        const leftStartRad = Math.atan2(dy, dx); 
-        const rightStartRad = Math.atan2(-dy, dx);
+        const colorA = mulColors[a] || '#B0C4DE', colorB = mulColors[b] || '#B0C4DE';
 
-        const colorA = mulColors[a] || '#B0C4DE';
-        const colorB = mulColors[b] || '#B0C4DE';
-
-        // 1. 마름모 셀 그리기
         for (let i = 0; i < a; i++) {
             for (let j = 0; j < b; j++) {
-                let x0 = startX - i * dx + j * dx;
-                let y0 = startY + i * dy + j * dy;
-                
-                ctx.beginPath();
-                ctx.moveTo(x0, y0);
-                ctx.lineTo(x0 - dx, y0 + dy);
-                ctx.lineTo(x0, y0 + 2 * dy);
-                ctx.lineTo(x0 + dx, y0 + dy);
-                ctx.closePath();
-                
-                const key = `${i}_${j}`;
-                let isFilled = mulCellStates[key];
+                let x0 = startX - i * dx + j * dx, y0 = startY + i * dy + j * dy;
+                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - dx, y0 + dy); ctx.lineTo(x0, y0 + 2 * dy); ctx.lineTo(x0 + dx, y0 + dy); ctx.closePath();
+                let isFilled = mulCellStates[`${i}_${j}`];
                 let fillColor = isFilled ? '#B0C4DE' : 'white';
-
                 if (mulHintState.active) {
                     const hColor = mulColors[mulHintState.base] || '#B0C4DE';
-                    if (mulHintState.isADan) {
-                        if (i < mulHintState.base && j < mulHintState.step) fillColor = hColor; 
-                    } else {
-                        if (i < mulHintState.step && j < mulHintState.base) fillColor = hColor; 
-                    }
+                    if (mulHintState.isADan) { if (i < mulHintState.base && j < mulHintState.step) fillColor = hColor; } 
+                    else { if (i < mulHintState.step && j < mulHintState.base) fillColor = hColor; }
                 }
-
-                ctx.fillStyle = fillColor;
-                ctx.fill();
+                ctx.fillStyle = fillColor; ctx.fill();
             }
         }
-
-        // 2. 왼쪽 아크(반원) 그리기
         for (let i = 0; i < a; i++) {
-            let cx = startX - (i + 0.5) * dx;
-            let cy = startY + (i + 0.5) * dy;
+            let cx = startX - (i + 0.5) * dx, cy = startY + (i + 0.5) * dy;
             let arcColor = colorA;
-            if (mulHintState.active && !mulHintState.isADan && i < mulHintState.step) {
-                arcColor = mulColors[mulHintState.step] || '#B0C4DE';
-            }
-            ctx.beginPath();
-            ctx.arc(cx, cy, R, Math.atan2(-dy, dx), Math.atan2(dy, -dx), true);
-            ctx.fillStyle = arcColor; ctx.fill();
-            ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
+            if (mulHintState.active && !mulHintState.isADan && i < mulHintState.step) arcColor = mulColors[mulHintState.step] || '#B0C4DE';
+            ctx.beginPath(); ctx.arc(cx, cy, R, Math.atan2(-dy, dx), Math.atan2(dy, -dx), true);
+            ctx.fillStyle = arcColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
         }
-
-        // 3. 오른쪽 아크(반원) 그리기
         for (let j = 0; j < b; j++) {
-            let cx = startX + (j + 0.5) * dx;
-            let cy = startY + (j + 0.5) * dy;
+            let cx = startX + (j + 0.5) * dx, cy = startY + (j + 0.5) * dy;
             let arcColor = colorB;
-            if (mulHintState.active && mulHintState.isADan && j < mulHintState.step) {
-                arcColor = mulColors[mulHintState.step] || '#B0C4DE';
-            }
-            ctx.beginPath();
-            ctx.arc(cx, cy, R, Math.atan2(-dy, -dx), Math.atan2(dy, dx), false);
-            ctx.fillStyle = arcColor; ctx.fill();
-            ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
+            if (mulHintState.active && mulHintState.isADan && j < mulHintState.step) arcColor = mulColors[mulHintState.step] || '#B0C4DE';
+            ctx.beginPath(); ctx.arc(cx, cy, R, Math.atan2(-dy, -dx), Math.atan2(dy, dx), false);
+            ctx.fillStyle = arcColor; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = arcColor; ctx.stroke();
         }
+        ctx.lineWidth = 2; ctx.strokeStyle = '#B0C4DE';
+        for (let i = 0; i <= a; i++) { ctx.beginPath(); ctx.moveTo(startX - i * dx, startY + i * dy); ctx.lineTo((startX - i * dx) + b * dx, (startY + i * dy) + b * dy); ctx.stroke(); }
+        for (let j = 0; j <= b; j++) { ctx.beginPath(); ctx.moveTo(startX + j * dx, startY + j * dy); ctx.lineTo((startX + j * dx) - a * dx, (startY + j * dy) + a * dy); ctx.stroke(); }
 
-        // 4. 격자 외곽선 그리기
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#B0C4DE';
-        for (let i = 0; i <= a; i++) {
-            ctx.beginPath();
-            ctx.moveTo(startX - i * dx, startY + i * dy);
-            ctx.lineTo((startX - i * dx) + b * dx, (startY + i * dy) + b * dy);
-            ctx.stroke();
-        }
-        for (let j = 0; j <= b; j++) {
-            ctx.beginPath();
-            ctx.moveTo(startX + j * dx, startY + j * dy);
-            ctx.lineTo((startX + j * dx) - a * dx, (startY + j * dy) + a * dy);
-            ctx.stroke();
-        }
-
-        // 5. a, b 텍스트 표시
-        ctx.fillStyle = '#333333';
-        ctx.font = 'bold 25px "Malgun Gothic", sans-serif';
+        ctx.fillStyle = '#333333'; ctx.font = 'bold 25px "Malgun Gothic", sans-serif';
         ctx.fillText(a, startX - (a / 2) * dx - 25, startY + (a / 2) * dy - 15);
         ctx.fillText(b, startX + (b / 2) * dx + 15, startY + (b / 2) * dy - 15);
 
-        // 6. 아이템 이미지 표시
         if (mulImgObj && mulImgObj.complete && mulImgObj.naturalHeight !== 0) {
             for (let i = 0; i < a; i++) {
                 for (let j = 0; j < b; j++) {
-                    let cx = startX - (i + 0.5) * dx + (j + 0.5) * dx;
-                    let cy = startY + (i + 0.5) * dy + (j + 0.5) * dy;
+                    let cx = startX - (i + 0.5) * dx + (j + 0.5) * dx, cy = startY + (i + 0.5) * dy + (j + 0.5) * dy;
                     ctx.drawImage(mulImgObj, cx - 23, cy - 23, 46, 46);
                 }
             }
         }
-
-        // 7. 힌트 진행 중 가운데 수식 텍스트
         if (mulHintState.active) {
-            const hintFormula = `${mulHintState.base} x ${mulHintState.step} = ${mulHintState.base * mulHintState.step}`;
-            ctx.fillStyle = 'black';
-            ctx.font = 'bold 40px "Malgun Gothic", sans-serif';
-            ctx.textAlign = "center";
-            ctx.fillText(hintFormula, 400, 650);
+            ctx.fillStyle = 'black'; ctx.font = 'bold 40px "Malgun Gothic", sans-serif'; ctx.textAlign = "center";
+            ctx.fillText(`${mulHintState.base} x ${mulHintState.step} = ${mulHintState.base * mulHintState.step}`, 400, 650);
             ctx.textAlign = "left"; 
         }
     }
@@ -1406,115 +1058,58 @@
         if (isAnswered || isHintPlaying) return;
         const canvas = document.getElementById('mul-canvas');
         const rect = canvas.getBoundingClientRect();
-        
         const scale = Math.min(rect.width / 800, rect.height / 700);
-        const renderedWidth = 800 * scale;
-        const renderedHeight = 700 * scale;
-        const offsetX = (rect.width - renderedWidth) / 2;
-        const offsetY = (rect.height - renderedHeight) / 2;
-
-        const x = (event.clientX - rect.left - offsetX) / scale;
-        const y = (event.clientY - rect.top - offsetY) / scale;
+        const x = (event.clientX - rect.left - (rect.width - 800 * scale) / 2) / scale;
+        const y = (event.clientY - rect.top - (rect.height - 700 * scale) / 2) / scale;
 
         if (x < 0 || x > 800 || y < 0 || y > 700) return;
-
-        const a = mul_n1, b = mul_n2;
-        const dx = 34, dy = 28;
-        const startX = 400;
-        const startY = 40 + (10 - Math.max(a, b)) * 20;
-
-        const U = (x - startX) / dx;
-        const V = (y - startY) / dy;
-
-        const iIdx = Math.floor((V - U) / 2);
-        const jIdx = Math.floor((V + U) / 2);
+        const a = mul_n1, b = mul_n2, dx = 34, dy = 28, startX = 400, startY = 40 + (10 - Math.max(a, b)) * 20;
+        const U = (x - startX) / dx, V = (y - startY) / dy;
+        const iIdx = Math.floor((V - U) / 2), jIdx = Math.floor((V + U) / 2);
 
         if (iIdx >= 0 && iIdx < a && jIdx >= 0 && jIdx < b) {
-            const key = `${iIdx}_${jIdx}`;
-            mulCellStates[key] = !mulCellStates[key];
+            mulCellStates[`${iIdx}_${jIdx}`] = !mulCellStates[`${iIdx}_${jIdx}`];
             renderMulBoard();
         }
     }
 
     function executeDanHint(base, target, isADan) {
         if (isAnswered) return;
+        currentHintSession++; isHintPlaying = true;
         
-        currentHintSession++;
-        const hintSessionId = currentHintSession;
-        isHintPlaying = true;
-        
-        const btnA = document.getElementById('mul-hint-btn-a');
-        const btnB = document.getElementById('mul-hint-btn-b');
-        
-        if (isADan) {
-            btnA.disabled = true; btnB.disabled = false;
-        } else {
-            btnA.disabled = false; btnB.disabled = true;
-        }
+        const btnA = document.getElementById('mul-hint-btn-a'), btnB = document.getElementById('mul-hint-btn-b');
+        if (isADan) { btnA.disabled = true; btnB.disabled = false; } else { btnA.disabled = false; btnB.disabled = true; }
 
-        mulCellStates = {};
-        mulHintState = { active: false };
-        renderMulBoard();
-
-        const expectedMenuSession = currentSessionId;
-        playHintStep(base, target, 1, isADan, expectedMenuSession, hintSessionId);
+        mulCellStates = {}; mulHintState = { active: false }; renderMulBoard();
+        playHintStep(base, target, 1, isADan, currentSessionId, currentHintSession);
     }
 
     function playHintStep(base, target, step, isADan, menuSession, hintSession) {
-        if (currentSessionId !== menuSession) return;
-        if (currentHintSession !== hintSession) return;
-
+        if (currentSessionId !== menuSession || currentHintSession !== hintSession) return;
         if (step > target || isAnswered) {
-            mulHintState.active = false;
-            mulCellStates = {}; 
-            renderMulBoard();
-            isHintPlaying = false;
-            document.getElementById('mul-hint-btn-a').disabled = false;
-            document.getElementById('mul-hint-btn-b').disabled = false;
+            mulHintState.active = false; mulCellStates = {}; renderMulBoard(); isHintPlaying = false;
+            document.getElementById('mul-hint-btn-a').disabled = false; document.getElementById('mul-hint-btn-b').disabled = false;
             return;
         }
-
         mulHintState = { active: true, base: base, target: target, step: step, isADan: isADan };
         renderMulBoard();
-
-        const w1 = base + ".wav";
-        const w2 = "곱하기.wav";
-        const w3 = step + ".wav";
-        const w4 = "는.wav";
-        const w5 = (base * step) + ".wav";
         
-        const sequence = [w1, w2, w3, w4, w5];
-        
+        const sequence = [base + ".wav", "곱하기.wav", step + ".wav", "는.wav", (base * step) + ".wav"];
         playWordSequence(sequence, () => {
-            setTimeout(() => {
-                playHintStep(base, target, step + 1, isADan, menuSession, hintSession);
-            }, 500);
+            setTimeout(() => playHintStep(base, target, step + 1, isADan, menuSession, hintSession), 500);
         }, menuSession, hintSession);
     }
 
     function playWordSequence(sequence, onComplete, menuSession, hintSession) {
-        if (currentSessionId !== menuSession) return;
-        if (currentHintSession !== hintSession) return;
-
-        if (sequence.length === 0 || isAnswered) {
-            onComplete();
-            return;
-        }
+        if (currentSessionId !== menuSession || currentHintSession !== hintSession) return;
+        if (sequence.length === 0 || isAnswered) { onComplete(); return; }
         
         const wordFile = sequence.shift();
+        const folder = /^\d+(\[고유어\])?\.wav$/.test(wordFile) ? 'sounds_number/' : 'sounds_basic/';
         
-        const isNumberSound = /^\d+(\[고유어\])?\.wav$/.test(wordFile);
-        const folder = isNumberSound ? 'sounds_number/' : 'sounds_basic/';
-        
-        currentAudio.pause();
-        currentAudio.src = folder + wordFile;
-        currentAudio.onended = () => {
-            setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 150);
-        };
-        currentAudio.play().catch(e => {
-            console.log("Sequence Audio error:", e);
-            setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 500);
-        });
+        currentAudio.pause(); currentAudio.src = folder + wordFile;
+        currentAudio.onended = () => { setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 150); };
+        currentAudio.play().catch(e => { setTimeout(() => playWordSequence(sequence, onComplete, menuSession, hintSession), 500); });
     }
 
     function checkMultiplicationAnswer() {
@@ -1523,116 +1118,81 @@
         const userInput = inputEl.value.trim();
 
         if (userInput === '99') {
-            const beepAudio = new Audio('sounds_basic/beep.wav');
-            beepAudio.play().catch(e => console.log("Beep error:", e));
-            
-            inputEl.value = '';
-            initMultiplicationGame();
-            return;
+            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e));
+            inputEl.value = ''; initMultiplicationGame(); return;
         }
 
         if (userInput === '') return;
-        const correctAnswer = mul_n1 * mul_n2;
 
-        if (parseInt(userInput) === correctAnswer) {
+        if (parseInt(userInput) === (mul_n1 * mul_n2)) {
             isAnswered = true;
-            
-            const charImg = document.getElementById('mul-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('mul-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
+            document.getElementById('mul-char').src = 'images/셈놀이고마워.png';
+            document.getElementById('mul-speech').innerHTML = "고마워!";
             solvedItems['곱하기 놀이'].push(targetItem);
             updateBanner();
-
-            if (solvedItems['곱하기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('곱하기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initMultiplicationGame, 2000);
-            }
+            checkAllCompleted('곱하기 놀이');
         } else {
-            const speech = document.getElementById('mul-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
+            document.getElementById('mul-speech').innerHTML = "다시<br>해보자.";
             playSound('다시해보자.wav');
-            
             inputEl.value = '';
-            
             setTimeout(() => {
                 if (!isAnswered) {
-                    if(speech) speech.innerHTML = "곱하면<br>몇 개인지<br>알려줄래?";
-                    const charImg = document.getElementById('mul-char');
-                    if(charImg) charImg.src = 'images/셈놀이.png';
+                    document.getElementById('mul-speech').innerHTML = "곱하면<br>몇 개인지<br>알려줄래?";
+                    document.getElementById('mul-char').src = 'images/셈놀이.png';
                     playSound('곱하면몇개인지알려줄래.wav');
                 }
             }, 2000);
         }
     }
 
-    // =========================================================================
-    // [시계 보기 놀이 메인 로직 및 헬퍼 메서드 모음]
-    // =========================================================================
-    function initClockGame() {
-        const availableItems = items.filter(i => !solvedItems['시계 보기 놀이'].includes(i));
-        if (availableItems.length === 0) return showCompletionScreen('시계 보기 놀이');
+    // ==========================================
+    // [나누기 놀이] (새로 추가된 6번째 게임)
+    // ==========================================
+    function initDivisionGame() {
+        const availableItems = items.filter(i => !solvedItems['나누기 놀이'].includes(i));
+        if (availableItems.length === 0) return showCompletionScreen('나누기 놀이');
         
         targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
-        isAnswered = false;
-        isClockHintActive = false;
+        isAnswered = false; isAnimating = false;
+        divItems = [];
+        
+        isHardMode = solvedItems['나누기 놀이'].length >= (items.length - 3);
 
-        clock_h = Math.floor(Math.random() * 12) + 1;
-        clock_m = Math.floor(Math.random() * 12) * 5; 
-
-        isHardMode = solvedItems['시계 보기 놀이'].length >= (items.length - 3);
+        // 정답이 딱 맞아 떨어지도록 세팅 (답이 최대 10, 그룹이 최대 5, 전체 수 최대 20 제한)
+        let validDivPairs = [];
+        for (let a = 2; a <= 10; a++) {
+            for (let b = 2; b <= 5; b++) {
+                if (a * b <= 20) validDivPairs.push([a * b, b]); 
+            }
+        }
+        const pair = validDivPairs[Math.floor(Math.random() * validDivPairs.length)];
+        div_n1 = pair[0]; // 전체 수
+        div_n2 = pair[1]; // 나눌 그룹(박스) 수
 
         document.getElementById('game-area').innerHTML = `
-            <style>
-                .clock-input::-webkit-outer-spin-button,
-                .clock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                .clock-input { -moz-appearance: textfield; text-align: center; font-weight: bold; font-family: 'Malgun Gothic', sans-serif; }
-            </style>
+            <style> #div-input::-webkit-outer-spin-button, #div-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #div-input { -moz-appearance: textfield; } </style>
             <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
-                
                 <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
-                    <div id="clock-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
-                        몇 시 몇 분<br>인지<br>알려줄래?
+                    <div id="div-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
+                        똑같이 나누면<br>몇 개인지<br>알려줄래?
                     </div>
-                    <img id="clock-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
+                    <img id="div-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
                 </div>
-                
                 <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
-                    
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
-                        <div id="clock-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
-                            ${isHardMode ? "💡 이제 힌트 없이 몇 시 몇 분인지 적어보세요!" : "💡 시계를 보고 몇 시 몇 분인지 적어보세요!"}
+                        <div id="div-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'};">
+                            ${isHardMode ? "💡 이제 머릿속으로만 계산해서 정답을 적어보세요!" : "💡 '힌트 보기' 버튼을 눌러보세요!"}
                         </div>
-                        <div style="display: flex; align-items: center;">
-                            ${isHardMode
-                                ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>`
-                                : `<button id="clock-hint-btn" onclick="showClockHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`
-                            }
-                        </div>
+                        ${isHardMode ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : `<button id="div-hint-btn" onclick="showDivisionHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`}
                     </div>
-                    
-                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
-                        <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
+                    <div id="div-canvas" style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                        <div style="position: absolute; left: 50%; top: 35%; transform: translate(-50%, -50%); font-size: calc(var(--k) * 0.9); font-weight: bold;">÷</div>
                     </div>
-                    
                     <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
-                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
-                            <input type="text" id="clock-h-input" class="game-input" readonly onclick="setActiveInput('clock-h-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080; text-align: center; outline: none; cursor: pointer;">
-                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
-                            
-                            <input type="text" id="clock-m-input" class="game-input" readonly onclick="setActiveInput('clock-m-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2); text-align: center; outline: none; cursor: pointer;">
-                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
-                            
-                            <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
+                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.2);">
+                            <div style="font-size: calc(var(--k) * 0.7); font-weight: bold;">${div_n1} ÷ ${div_n2} = </div>
+                            <input type="text" id="div-input" class="game-input" readonly onclick="setActiveInput('div-input')" style="width: calc(var(--k) * 1.5); font-size: calc(var(--k) * 0.7); font-weight: bold; text-align: center; background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); outline: none; cursor: pointer;">
+                            <button class="submit-btn" onclick="checkDivisionAnswer()">확인</button>
                         </div>
                         ${getCustomKeypadHTML()}
                     </div>
@@ -1640,9 +1200,193 @@
             </div>
         `;
 
-        renderClockBoard();
-        playSound('몇시몇분인지알려줄래.wav');
-        setActiveInput('clock-h-input');
+        const canvas = document.getElementById('div-canvas');
+        
+        // 나눌 바구니(박스) 그리기
+        const boxStartY = 1.9;
+        const boxWidth = 1.6;
+        const boxSpacing = 0.2;
+        const totalBoxWidth = div_n2 * boxWidth + (div_n2 - 1) * boxSpacing;
+        const boxStartX = (9.5 - totalBoxWidth) / 2; // 가용 넓이 기준 중앙 정렬
+
+        for (let i = 0; i < div_n2; i++) {
+            let box = document.createElement('div');
+            box.style.position = 'absolute';
+            box.style.left = `calc(var(--k) * ${boxStartX + i * (boxWidth + boxSpacing)})`;
+            box.style.top = `calc(var(--k) * ${boxStartY})`;
+            box.style.width = `calc(var(--k) * ${boxWidth})`;
+            box.style.height = `calc(var(--k) * 1.9)`;
+            box.style.border = 'calc(var(--k) * 0.05) dashed #888';
+            box.style.borderRadius = 'calc(var(--k) * 0.2)';
+            box.style.backgroundColor = 'rgba(255,255,255,0.3)';
+            canvas.appendChild(box);
+        }
+
+        // 아이템 생성
+        for(let i=0; i<div_n1; i++) {
+            let img = document.createElement('img');
+            img.src = `images/${targetItem}.png`;
+            img.className = 'placed-item';
+            img.style.transition = 'all 0.6s ease-in-out';
+            canvas.appendChild(img);
+            divItems.push(img);
+        }
+
+        rearrangeDivItems();
+        evaluateDivHintButtonState();
+
+        // 없는 파일일 수 있으나 일관성을 위해 설정 (에러나면 무시됨)
+        playSound('똑같이나누면몇개인지알려줄래.wav');
+        setActiveInput('div-input');
+    }
+
+    function rearrangeDivItems() {
+        const cols = Math.min(div_n1, 10);
+        const startX = (9.5 - cols * 0.75) / 2;
+        const startY = 0.2;
+        divItems.forEach((img, i) => {
+            const col = i % 10;
+            const row = Math.floor(i / 10);
+            img.style.left = `calc(var(--k) * ${startX + col * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + row * 0.75})`;
+        });
+    }
+
+    function evaluateDivHintButtonState() {
+        const hintBtn = document.getElementById('div-hint-btn');
+        const instLabel = document.getElementById('div-instruction');
+        if (!hintBtn) return;
+        if (isHardMode || isAnimating) {
+            hintBtn.disabled = true; hintBtn.style.backgroundColor = '#e0e0e0';
+            if (instLabel && !isHardMode) instLabel.innerText = "💡 정답을 계산해서 아래에 적어보세요!";
+        } else {
+            hintBtn.disabled = false; hintBtn.style.backgroundColor = '#87CEEB';
+            if (instLabel) instLabel.innerText = "💡 '힌트 보기' 버튼을 눌러보세요!";
+        }
+    }
+
+    function showDivisionHint() {
+        if (isAnswered || isAnimating) return;
+        isAnimating = true; evaluateDivHintButtonState();
+
+        const boxStartY = 1.9;
+        const boxWidth = 1.6;
+        const boxSpacing = 0.2;
+        const totalBoxWidth = div_n2 * boxWidth + (div_n2 - 1) * boxSpacing;
+        const boxStartX = (9.5 - totalBoxWidth) / 2;
+
+        divItems.forEach((img, i) => {
+            const boxIdx = i % div_n2;
+            const itemIdxInBox = Math.floor(i / div_n2);
+            
+            const col = itemIdxInBox % 3;
+            const row = Math.floor(itemIdxInBox / 3);
+            
+            const targetX = boxStartX + boxIdx * (boxWidth + boxSpacing) + 0.1 + col * 0.45;
+            const targetY = boxStartY + 0.1 + row * 0.45;
+            
+            img.dataset.origLeft = img.style.left;
+            img.dataset.origTop = img.style.top;
+            
+            img.style.left = `calc(var(--k) * ${targetX})`;
+            img.style.top = `calc(var(--k) * ${targetY})`;
+        });
+
+        const expectedSessionId = currentSessionId;
+        setTimeout(() => {
+            if (expectedSessionId !== currentSessionId || isAnswered) return;
+            divItems.forEach((img) => {
+                img.style.left = img.dataset.origLeft;
+                img.style.top = img.dataset.origTop;
+            });
+            setTimeout(() => {
+                if (expectedSessionId !== currentSessionId || isAnswered) return;
+                isAnimating = false; evaluateDivHintButtonState();
+            }, 600);
+        }, 2500);
+    }
+
+    function checkDivisionAnswer() {
+        if (isAnswered) return;
+        const inputEl = document.getElementById('div-input');
+        const userInput = inputEl.value.trim();
+
+        if (userInput === '99') {
+            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e));
+            inputEl.value = ''; initDivisionGame(); return;
+        }
+
+        if (userInput === '') return;
+
+        if (parseInt(userInput) === (div_n1 / div_n2)) {
+            isAnswered = true;
+            document.getElementById('div-char').src = 'images/셈놀이고마워.png';
+            document.getElementById('div-speech').innerHTML = "고마워!";
+            solvedItems['나누기 놀이'].push(targetItem);
+            updateBanner();
+            checkAllCompleted('나누기 놀이');
+        } else {
+            document.getElementById('div-speech').innerHTML = "다시<br>해보자.";
+            playSound('다시해보자.wav');
+            inputEl.value = '';
+            setTimeout(() => {
+                if (!isAnswered) {
+                    document.getElementById('div-speech').innerHTML = "똑같이 나누면<br>몇 개인지<br>알려줄래?";
+                    document.getElementById('div-char').src = 'images/셈놀이.png';
+                    playSound('똑같이나누면몇개인지알려줄래.wav');
+                }
+            }, 2000);
+        }
+    }
+
+    // ==========================================
+    // [시계 보기 놀이]
+    // ==========================================
+    function initClockGame() {
+        const availableItems = items.filter(i => !solvedItems['시계 보기 놀이'].includes(i));
+        if (availableItems.length === 0) return showCompletionScreen('시계 보기 놀이');
+        
+        targetItem = availableItems[Math.floor(Math.random() * availableItems.length)];
+        isAnswered = false; isClockHintActive = false;
+        clock_h = Math.floor(Math.random() * 12) + 1;
+        clock_m = Math.floor(Math.random() * 12) * 5; 
+        isHardMode = solvedItems['시계 보기 놀이'].length >= (items.length - 3);
+
+        document.getElementById('game-area').innerHTML = `
+            <style> .clock-input::-webkit-outer-spin-button, .clock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } .clock-input { -moz-appearance: textfield; text-align: center; font-weight: bold; font-family: 'Malgun Gothic', sans-serif; } </style>
+            <div style="display: flex; width: 100%; height: 100%; box-sizing: border-box; padding: calc(var(--k) * 0.2) 0;">
+                <div style="width: calc(var(--k) * 1.5); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: calc(var(--k) * 1.5); padding-left: calc(var(--k) * 0.2);">
+                    <div id="clock-speech" style="min-height: calc(var(--k) * 1.1); font-size: calc(var(--k) * 0.231); font-weight: bold; text-align: left; margin-bottom: calc(var(--k) * 0.3);">
+                        몇 시 몇 분<br>인지<br>알려줄래?
+                    </div>
+                    <img id="clock-char" src="images/셈놀이.png" onerror="this.src=''" style="width: calc(var(--k) * 1.5); height: calc(var(--k) * 3); object-fit: contain; object-position: left top; margin-left: calc(var(--k) * -0.1);">
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; position: relative; margin-left: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 calc(var(--k) * 0.5); height: calc(var(--k) * 1);">
+                        <div id="clock-instruction" style="font-size: calc(var(--k) * 0.216); font-weight: bold; color: ${isHardMode ? 'red' : '#888'}; line-height: 1.2;">
+                            ${isHardMode ? "💡 이제 힌트 없이 몇 시 몇 분인지 적어보세요!" : "💡 시계를 보고 몇 시 몇 분인지 적어보세요!"}
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            ${isHardMode ? `<div style="font-size: calc(var(--k) * 0.16); font-weight: bold; color: red;">💪 스스로 해보자!</div>` : `<button id="clock-hint-btn" onclick="showClockHint()" style="font-size: calc(var(--k) * 0.16); font-weight: bold; padding: calc(var(--k) * 0.1) calc(var(--k) * 0.2); cursor: pointer; background-color: #87CEEB; border: none; border-radius: calc(var(--k)*0.1);">💡 힌트 보기</button>`}
+                        </div>
+                    </div>
+                    <div style="flex: 1; position: relative; background: white; border: calc(var(--k) * 0.05) solid #ccc; border-radius: calc(var(--k) * 0.2); overflow: hidden;">
+                        <canvas id="clock-canvas" width="800" height="700" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: block;"></canvas>
+                    </div>
+                    <div style="height: calc(var(--k) * 2.3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15); box-sizing: border-box;">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: calc(var(--k) * 0.15);">
+                            <input type="text" id="clock-h-input" class="game-input" readonly onclick="setActiveInput('clock-h-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #008080; text-align: center; outline: none; cursor: pointer;">
+                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #008080;">시</div>
+                            <input type="text" id="clock-m-input" class="game-input" readonly onclick="setActiveInput('clock-m-input')" style="width: calc(var(--k) * 1.2); font-size: calc(var(--k) * 0.7); background-color: #FFFACD; border: calc(var(--k)*0.05) solid #ccc; border-radius: calc(var(--k)*0.1); color: #800080; margin-left: calc(var(--k)*0.2); text-align: center; outline: none; cursor: pointer;">
+                            <div style="font-size: calc(var(--k) * 0.6); font-weight: bold; color: #800080;">분</div>
+                            <button class="submit-btn" style="margin-left: calc(var(--k)*0.3);" onclick="checkClockAnswer()">확인</button>
+                        </div>
+                        ${getCustomKeypadHTML()}
+                    </div>
+                </div>
+            </div>
+        `;
+        renderClockBoard(); playSound('몇시몇분인지알려줄래.wav'); setActiveInput('clock-h-input');
     }
 
     function renderClockBoard() {
@@ -1650,121 +1394,51 @@
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = 400, cy = 350, r = 240;  
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fillStyle = 'white'; ctx.fill(); ctx.lineWidth = 10; ctx.strokeStyle = '#8B4513'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, r - 12, 0, 2 * Math.PI); ctx.lineWidth = 3; ctx.strokeStyle = '#D2B48C'; ctx.stroke();
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-        const cx = 400;
-        const cy = 350; 
-        const r = 240;  
-
-        // 1. 시계 바탕 원
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-        ctx.fillStyle = 'white'; ctx.fill();
-        ctx.lineWidth = 10; ctx.strokeStyle = '#8B4513'; ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.arc(cx, cy, r - 12, 0, 2 * Math.PI);
-        ctx.lineWidth = 3; ctx.strokeStyle = '#D2B48C'; ctx.stroke();
-
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        // 2. 눈금 및 숫자
         for (let i = 1; i <= 60; i++) {
             const angle = (i * 6 - 90) * (Math.PI / 180);
             const isHour = (i % 5 === 0);
-            
-            const outerR = r - 15;
-            const innerR = isHour ? r - 35 : r - 25;
-            
-            const x1 = cx + innerR * Math.cos(angle);
-            const y1 = cy + innerR * Math.sin(angle);
-            const x2 = cx + outerR * Math.cos(angle);
-            const y2 = cy + outerR * Math.sin(angle);
-            
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.lineWidth = isHour ? 5 : 2;
-            ctx.strokeStyle = isHour ? 'black' : 'gray';
-            ctx.stroke();
-
-            // 시간 숫자 표시 (1~12)
+            const outerR = r - 15, innerR = isHour ? r - 35 : r - 25;
+            ctx.beginPath(); ctx.moveTo(cx + innerR * Math.cos(angle), cy + innerR * Math.sin(angle));
+            ctx.lineTo(cx + outerR * Math.cos(angle), cy + outerR * Math.sin(angle));
+            ctx.lineWidth = isHour ? 5 : 2; ctx.strokeStyle = isHour ? 'black' : 'gray'; ctx.stroke();
             if (isHour) {
                 const num = i / 5;
-                const textR = r - 70;
-                const tx = cx + textR * Math.cos(angle);
-                const ty = cy + textR * Math.sin(angle);
-                
-                // 힌트 상태일 때 오답 숨기기
                 if (!isClockHintActive || num === clock_h) {
-                    ctx.fillStyle = '#008080';
-                    ctx.font = 'bold 35px Arial';
-                    ctx.fillText(num, tx, ty);
+                    ctx.fillStyle = '#008080'; ctx.font = 'bold 35px Arial';
+                    ctx.fillText(num, cx + (r - 70) * Math.cos(angle), cy + (r - 70) * Math.sin(angle));
                 }
-
-                // 분 숫자 표시 (0~55)
                 const minVal = (i === 60) ? 0 : i;
-                const minStr = minVal < 10 ? '0' + minVal : minVal.toString();
-                const minTextR = r + 30;
-                const mtx = cx + minTextR * Math.cos(angle);
-                const mty = cy + minTextR * Math.sin(angle);
-                
                 if (!isClockHintActive || minVal === clock_m) {
-                    ctx.fillStyle = '#800080';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.fillText(minStr, mtx, mty);
+                    ctx.fillStyle = '#800080'; ctx.font = 'bold 20px Arial';
+                    ctx.fillText(minVal < 10 ? '0' + minVal : minVal, cx + (r + 30) * Math.cos(angle), cy + (r + 30) * Math.sin(angle));
                 }
             }
         }
-
         ctx.lineCap = 'round';
-
-        // 3. 시침 (시간 + 분에 따른 미세 각도 이동)
-        const hLen = 110;
         const hAngle = ((clock_h % 12) * 30 + (clock_m * 0.5) - 90) * (Math.PI / 180);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + hLen * Math.cos(hAngle), cy + hLen * Math.sin(hAngle));
-        ctx.lineWidth = 14; ctx.strokeStyle = '#008080'; ctx.stroke();
-
-        // 4. 분침
-        const mLen = 160;
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + 110 * Math.cos(hAngle), cy + 110 * Math.sin(hAngle)); ctx.lineWidth = 14; ctx.strokeStyle = '#008080'; ctx.stroke();
         const mAngle = (clock_m * 6 - 90) * (Math.PI / 180);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + mLen * Math.cos(mAngle), cy + mLen * Math.sin(mAngle));
-        ctx.lineWidth = 8; ctx.strokeStyle = '#800080'; ctx.stroke();
-
-        // 5. 중심점 핀
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + 160 * Math.cos(mAngle), cy + 160 * Math.sin(mAngle)); ctx.lineWidth = 8; ctx.strokeStyle = '#800080'; ctx.stroke();
         ctx.beginPath(); ctx.arc(cx, cy, 12, 0, 2 * Math.PI); ctx.fillStyle = '#8B4513'; ctx.fill();
         ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2 * Math.PI); ctx.fillStyle = '#FFD700'; ctx.fill();
     }
 
     function showClockHint() {
         if (isAnswered || isClockHintActive) return;
-        
         isClockHintActive = true;
-        document.getElementById('clock-hint-btn').disabled = true;
-        document.getElementById('clock-hint-btn').style.backgroundColor = '#e0e0e0';
-        
-        // 힌트 모드로 캔버스 다시 그리기 (정답만 보임)
+        document.getElementById('clock-hint-btn').disabled = true; document.getElementById('clock-hint-btn').style.backgroundColor = '#e0e0e0';
         renderClockBoard();
-        
-        currentSessionId++; 
-        const session = currentSessionId;
-        
+        const session = ++currentSessionId;
         setTimeout(() => {
-            if (session !== currentSessionId) return; 
-            if (isAnswered) return;
-            
-            isClockHintActive = false;
-            renderClockBoard();
-            
+            if (session !== currentSessionId || isAnswered) return;
+            isClockHintActive = false; renderClockBoard();
             const btn = document.getElementById('clock-hint-btn');
-            if (btn) {
-                btn.disabled = false;
-                btn.style.backgroundColor = '#87CEEB';
-            }
+            if (btn) { btn.disabled = false; btn.style.backgroundColor = '#87CEEB'; }
         }, 2000);
     }
 
@@ -1774,51 +1448,26 @@
         const inputM = document.getElementById('clock-m-input').value.trim();
 
         if (inputH === '99' || inputM === '99') {
-            const beepAudio = new Audio('sounds_basic/beep.wav');
-            beepAudio.play().catch(e => console.log("Beep error:", e));
-            initClockGame();
-            return;
+            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e)); initClockGame(); return;
         }
 
         if (inputH === '' || inputM === '') return;
-
         if (parseInt(inputH) === clock_h && parseInt(inputM) === clock_m) {
             isAnswered = true;
-            
-            const charImg = document.getElementById('clock-char');
-            if(charImg) charImg.src = 'images/셈놀이고마워.png';
-            
-            const speech = document.getElementById('clock-speech');
-            if(speech) speech.innerHTML = "고마워!";
-
+            document.getElementById('clock-char').src = 'images/셈놀이고마워.png';
+            document.getElementById('clock-speech').innerHTML = "고마워!";
             solvedItems['시계 보기 놀이'].push(targetItem);
             updateBanner();
-
-            if (solvedItems['시계 보기 놀이'].length === items.length) {
-                if (Object.values(solvedItems).every(arr => arr.length === items.length)) {
-                    playSoundSequence(['다했어고마워.wav', '모두다해냈어도와줘서고마워다음에또만나자.wav']);
-                } else {
-                    playSound('다했어고마워.wav');
-                }
-                setTimeout(() => showCompletionScreen('시계 보기 놀이'), 2000);
-            } else {
-                playSound('고마워.wav');
-                setTimeout(initClockGame, 2000);
-            }
+            checkAllCompleted('시계 보기 놀이');
         } else {
-            const speech = document.getElementById('clock-speech');
-            if(speech) speech.innerHTML = "다시<br>해보자.";
+            document.getElementById('clock-speech').innerHTML = "다시<br>해보자.";
             playSound('다시해보자.wav');
-            
-            document.getElementById('clock-h-input').value = '';
-            document.getElementById('clock-m-input').value = '';
+            document.getElementById('clock-h-input').value = ''; document.getElementById('clock-m-input').value = '';
             document.getElementById('clock-h-input').focus();
-            
             setTimeout(() => {
                 if (!isAnswered) {
-                    if(speech) speech.innerHTML = "몇 시 몇 분<br>인지<br>알려줄래?";
-                    const charImg = document.getElementById('clock-char');
-                    if(charImg) charImg.src = 'images/셈놀이.png';
+                    document.getElementById('clock-speech').innerHTML = "몇 시 몇 분<br>인지<br>알려줄래?";
+                    document.getElementById('clock-char').src = 'images/셈놀이.png';
                     playSound('몇시몇분인지알려줄래.wav');
                 }
             }, 2000);
@@ -1831,9 +1480,7 @@
         resizeTimer = setTimeout(() => {
             const appContainer = document.getElementById('app-container');
             if (appContainer) {
-                appContainer.style.display = 'none';
-                void appContainer.offsetHeight;
-                appContainer.style.display = 'grid';
+                appContainer.style.display = 'none'; void appContainer.offsetHeight; appContainer.style.display = 'grid';
             }
         }, 250);
     });

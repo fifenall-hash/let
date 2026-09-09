@@ -1119,11 +1119,6 @@
         const inputEl = document.getElementById('mul-input');
         const userInput = inputEl.value.trim();
 
-        if (userInput === '99') {
-            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e));
-            inputEl.value = ''; initMultiplicationGame(); return;
-        }
-
         if (userInput === '') return;
 
         if (parseInt(userInput) === (mul_n1 * mul_n2)) {
@@ -1159,7 +1154,6 @@
         
         isHardMode = solvedItems['나누기 놀이'].length >= (items.length - 3);
 
-        // 💡 1. 요청하신 31개의 완벽한 순서쌍 문제 조합
         const validDivPairs = [
             [20, 10, 2], [18, 9, 2], [16, 8, 2], [14, 7, 2], [12, 6, 2], [10, 5, 2], [8, 4, 2], [6, 3, 2], [4, 2, 2], [2, 1, 2],
             [15, 5, 3], [12, 4, 3], [9, 3, 3], [6, 2, 3], [3, 1, 3],
@@ -1171,9 +1165,9 @@
             [20, 2, 10], [10, 1, 10]
         ];
         const pair = validDivPairs[Math.floor(Math.random() * validDivPairs.length)];
-        div_n1 = pair[0]; // 전체 물건 수
-        div_n2 = pair[1]; // 나눌 상자 수
-        const c = pair[2]; // 상자당 들어가는 수
+        div_n1 = pair[0]; 
+        div_n2 = pair[1]; 
+        const c = pair[2]; 
 
         document.getElementById('game-area').innerHTML = `
             <style> #div-input::-webkit-outer-spin-button, #div-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #div-input { -moz-appearance: textfield; } </style>
@@ -1208,7 +1202,7 @@
 
         const canvas = document.getElementById('div-canvas');
         
-        // 애니메이션을 위한 분획구역 전체 래퍼 (오른쪽에 3.7만큼 대기)
+        // 애니메이션을 위한 분획구역 전체 래퍼 (이동 속도 0.5s 적용)
         const wrapper = document.createElement('div');
         wrapper.id = 'div-zones-wrapper';
         wrapper.style.position = 'absolute';
@@ -1216,11 +1210,10 @@
         wrapper.style.top = '0';
         wrapper.style.width = '100%';
         wrapper.style.height = '100%';
-        wrapper.style.transition = 'transform 1.5s ease-in-out'; 
+        wrapper.style.transition = 'transform 0.5s ease-in-out'; // 💡 변경됨
         wrapper.style.zIndex = '1';
         canvas.appendChild(wrapper);
 
-        // 💡 2. 상자의 가로/세로 모양 규격화
         const boxShapes = {
             2: {w: 2, h: 1}, 3: {w: 3, h: 1}, 4: {w: 4, h: 1}, 5: {w: 1, h: 5},
             6: {w: 3, h: 2}, 8: {w: 4, h: 2}, 9: {w: 3, h: 3}, 10: {w: 2, h: 5}
@@ -1228,7 +1221,6 @@
         const bw = boxShapes[c].w;
         const bh = boxShapes[c].h;
 
-        // 💡 3. 상자 쌓기 알고리즘 (왼쪽 아래부터 세로로 채우고, 꽉 차면 오른쪽 열로 넘어감)
         let boxPlacements = [];
         let gridRows = 5;
         let gridCols = 10;
@@ -1255,7 +1247,6 @@
             }
         }
 
-        // 종이 박스 색상 테마 (직각 적용)
         const colors = [
             { border: '#8B5A2B', bg: 'rgba(205, 170, 125, 0.6)' },
             { border: '#5C3A21', bg: 'rgba(193, 154, 107, 0.6)' },
@@ -1264,13 +1255,11 @@
 
         let cellToBox = {};
         
-        // 💡 4. 상자 렌더링 (각진 모서리, 간격 유지)
         boxPlacements.forEach((bpos, i) => {
             const color = colors[i % colors.length];
             const box = document.createElement('div');
             box.style.position = 'absolute';
             
-            // 상자 위치와 크기 계산 (-0.11을 빼서 상자 간 명확한 여백 확보)
             box.style.left = `calc(var(--k) * ${0.5 + bpos.c * 0.75 - 0.05})`;
             const visual_top_row = 4 - (bpos.r + bh - 1);
             box.style.top = `calc(var(--k) * ${0.3 + visual_top_row * 0.75 - 0.05})`;
@@ -1281,7 +1270,6 @@
             box.style.boxSizing = 'border-box';
             wrapper.appendChild(box);
 
-            // 물건이 덮일 자리 기록
             for (let rr = 0; rr < bh; rr++) {
                 for (let cc = 0; cc < bw; cc++) {
                     cellToBox[`${bpos.r + rr}_${bpos.c + cc}`] = i;
@@ -1289,7 +1277,6 @@
             }
         });
 
-        // 💡 5. 아이템 생성 (왼쪽 아래부터 5개 단위로 쌓는 방식)
         divItems = [];
         divOrphanedItems = [];
         
@@ -1298,7 +1285,7 @@
             img.src = `images/${targetItem}.png`;
             img.className = 'placed-item';
             img.style.zIndex = '2'; 
-            img.style.transition = 'all 0.4s ease-in-out'; 
+            img.style.transition = 'all 0.5s ease-in-out'; // 💡 변경됨
             canvas.appendChild(img);
             divItems.push(img);
 
@@ -1306,13 +1293,11 @@
             let orig_r = k % 5;
             let key = `${orig_r}_${orig_c}`;
 
-            // 상자가 덮이지 않는 바깥 공간에 있는 물건만 추려냄
             if (cellToBox[key] === undefined) {
                 divOrphanedItems.push({ img, orig_r, orig_c });
             }
         }
 
-        // 💡 6. 빈 슬롯 찾아내기 (남은 물건들이 하나씩 채워질 위치)
         divEmptySlots = [];
         boxPlacements.forEach((bpos) => {
             for (let cc = 0; cc < bw; cc++) {
@@ -1320,7 +1305,6 @@
                     let r = bpos.r + rr;
                     let c = bpos.c + cc;
                     let origIndex = c * 5 + r;
-                    // 초기에 물건이 놓이지 않은 빈 자리
                     if (origIndex >= div_n1) {
                         divEmptySlots.push({r, c});
                     }
@@ -1396,14 +1380,13 @@
         const wrapper = document.getElementById('div-zones-wrapper');
         
         if (wrapper) {
-            // 💡 1. 박스 전체 왼쪽으로 스르륵 이동
+            // 박스 전체 왼쪽으로 스르륵 이동
             wrapper.style.transform = 'translateX(calc(var(--k) * -3.7))';
 
-            // 박스 이동이 완료된 후 모션 시작
+            // 💡 상자 이동 0.5초 후 물건 비행 애니메이션 시작
             setTimeout(() => {
                 if (expectedSessionId !== currentSessionId || isAnswered) return;
                 
-                // 💡 2. 밖에 남겨진 물건들이 빈 상자 공간으로 차례차례 1개씩 날아감
                 let delay = 0;
                 divOrphanedItems.forEach((orphan, idx) => {
                     setTimeout(() => {
@@ -1416,15 +1399,14 @@
                         orphan.img.style.left = `calc(var(--k) * ${targetX})`;
                         orphan.img.style.top = `calc(var(--k) * ${targetY})`;
                     }, delay);
-                    delay += 300; // 0.3초 간격으로 한 개씩 출발
+                    delay += 300; // 0.3초 간격
                 });
 
-                // 💡 3. 모든 비행이 끝나고 잠시 보여준 뒤 제자리로 복귀
+                // 모든 비행이 끝나고 결과를 보여준 뒤 제자리로 복귀
                 setTimeout(() => {
                     if (expectedSessionId !== currentSessionId || isAnswered) return;
                     wrapper.style.transform = 'translateX(0)';
                     
-                    // 날아갔던 물건들도 다시 원래 위치로 자연스럽게 이동
                     divOrphanedItems.forEach((orphan) => {
                         let origX = 0.5 + orphan.orig_c * 0.75;
                         let visual_row = 4 - orphan.orig_r;
@@ -1433,16 +1415,17 @@
                         orphan.img.style.top = `calc(var(--k) * ${origY})`;
                     });
 
+                    // 💡 제자리 복귀 이동 시간(0.5초) 대기 후 종료 처리
                     setTimeout(() => {
                         if (expectedSessionId !== currentSessionId || isAnswered) return;
                         isAnimating = false; 
                         updateDivBorders(false); 
                         evaluateDivHintButtonState();
-                    }, 1500);
+                    }, 500);
 
-                }, delay + 2000); // 마지막 물건이 채워지고 2초 동안 정답 형태 유지
+                }, delay + 2000); 
 
-            }, 1500); 
+            }, 500); 
         }
     }
 
@@ -1450,11 +1433,6 @@
         if (isAnswered) return;
         const inputEl = document.getElementById('div-input');
         const userInput = inputEl.value.trim();
-
-        if (userInput === '99') {
-            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e));
-            inputEl.value = ''; initDivisionGame(); return;
-        }
 
         if (userInput === '') return;
 
@@ -1587,11 +1565,8 @@
         const inputH = document.getElementById('clock-h-input').value.trim();
         const inputM = document.getElementById('clock-m-input').value.trim();
 
-        if (inputH === '99' || inputM === '99') {
-            new Audio('sounds_basic/beep.wav').play().catch(e=>console.log(e)); initClockGame(); return;
-        }
-
         if (inputH === '' || inputM === '') return;
+        
         if (parseInt(inputH) === clock_h && parseInt(inputM) === clock_m) {
             isAnswered = true;
             document.getElementById('clock-char').src = 'images/셈놀이고마워.png';

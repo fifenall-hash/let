@@ -1159,7 +1159,7 @@
         
         isHardMode = solvedItems['나누기 놀이'].length >= (items.length - 3);
 
-        // 💡 1. 허용된 문제(a, b, c) 조합만 출제
+        // 💡 1. 요청하신 31개의 완벽한 순서쌍 문제 조합
         const validDivPairs = [
             [20, 10, 2], [18, 9, 2], [16, 8, 2], [14, 7, 2], [12, 6, 2], [10, 5, 2], [8, 4, 2], [6, 3, 2], [4, 2, 2], [2, 1, 2],
             [15, 5, 3], [12, 4, 3], [9, 3, 3], [6, 2, 3], [3, 1, 3],
@@ -1171,9 +1171,9 @@
             [20, 2, 10], [10, 1, 10]
         ];
         const pair = validDivPairs[Math.floor(Math.random() * validDivPairs.length)];
-        div_n1 = pair[0]; // 전체 수 (a)
-        div_n2 = pair[1]; // 상자 수 (b)
-        const c = pair[2]; // 상자당 개수 (c)
+        div_n1 = pair[0]; // 전체 물건 수
+        div_n2 = pair[1]; // 나눌 상자 수
+        const c = pair[2]; // 상자당 들어가는 수
 
         document.getElementById('game-area').innerHTML = `
             <style> #div-input::-webkit-outer-spin-button, #div-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } #div-input { -moz-appearance: textfield; } </style>
@@ -1208,7 +1208,7 @@
 
         const canvas = document.getElementById('div-canvas');
         
-        // 애니메이션을 위한 분획구역 전체 래퍼
+        // 애니메이션을 위한 분획구역 전체 래퍼 (오른쪽에 3.7만큼 대기)
         const wrapper = document.createElement('div');
         wrapper.id = 'div-zones-wrapper';
         wrapper.style.position = 'absolute';
@@ -1220,7 +1220,7 @@
         wrapper.style.zIndex = '1';
         canvas.appendChild(wrapper);
 
-        // 💡 2. 상자의 가로/세로 규격 설정
+        // 💡 2. 상자의 가로/세로 모양 규격화
         const boxShapes = {
             2: {w: 2, h: 1}, 3: {w: 3, h: 1}, 4: {w: 4, h: 1}, 5: {w: 1, h: 5},
             6: {w: 3, h: 2}, 8: {w: 4, h: 2}, 9: {w: 3, h: 3}, 10: {w: 2, h: 5}
@@ -1228,26 +1228,26 @@
         const bw = boxShapes[c].w;
         const bh = boxShapes[c].h;
 
-        // 💡 3. 박스를 5열 그리드 공간에 최적화하여 패킹 (겹치지 않게)
+        // 💡 3. 상자 쌓기 알고리즘 (왼쪽 아래부터 세로로 채우고, 꽉 차면 오른쪽 열로 넘어감)
         let boxPlacements = [];
-        let gridRows = 10;
-        let gridCols = 5;
-        let occupied = Array(gridRows).fill(0).map(()=>Array(gridCols).fill(false));
-
+        let gridRows = 5;
+        let gridCols = 10;
+        let occupied = Array(gridRows).fill(0).map(() => Array(gridCols).fill(false));
         let boxesPlaced = 0;
-        for(let r = 0; r < gridRows && boxesPlaced < div_n2; r++) {
-            for(let col = 0; col <= gridCols - bw && boxesPlaced < div_n2; col++) {
+
+        for (let col = 0; col <= gridCols - bw && boxesPlaced < div_n2; col++) {
+            for (let row = 0; row <= gridRows - bh && boxesPlaced < div_n2; row++) {
                 let fits = true;
-                for(let rr = r; rr < r + bh; rr++) {
-                    for(let cc = col; cc < col + bw; cc++) {
-                        if(occupied[rr] && occupied[rr][cc]) fits = false;
+                for (let rr = 0; rr < bh; rr++) {
+                    for (let cc = 0; cc < bw; cc++) {
+                        if (occupied[row + rr][col + cc]) fits = false;
                     }
                 }
-                if(fits) {
-                    boxPlacements.push({r, c: col});
-                    for(let rr = r; rr < r + bh; rr++) {
-                        for(let cc = col; cc < col + bw; cc++) {
-                            if(occupied[rr]) occupied[rr][cc] = true;
+                if (fits) {
+                    boxPlacements.push({r: row, c: col});
+                    for (let rr = 0; rr < bh; rr++) {
+                        for (let cc = 0; cc < bw; cc++) {
+                            occupied[row + rr][col + cc] = true;
                         }
                     }
                     boxesPlaced++;
@@ -1255,66 +1255,73 @@
             }
         }
 
-        // 종이 박스 색상 배열
+        // 종이 박스 색상 테마 (직각 적용)
         const colors = [
             { border: '#8B5A2B', bg: 'rgba(205, 170, 125, 0.6)' },
             { border: '#5C3A21', bg: 'rgba(193, 154, 107, 0.6)' },
             { border: '#A0522D', bg: 'rgba(222, 184, 135, 0.6)' }
         ];
 
-        // 💡 4. 물리적 박스 렌더링 (둥근 각 없앰, 간격(0.1) 띄움)
         let cellToBox = {};
+        
+        // 💡 4. 상자 렌더링 (각진 모서리, 간격 유지)
         boxPlacements.forEach((bpos, i) => {
             const color = colors[i % colors.length];
             const box = document.createElement('div');
             box.style.position = 'absolute';
-            box.style.left = `calc(var(--k) * ${0.5 + bpos.c * 0.75 + 0.05})`;
-            box.style.top = `calc(var(--k) * ${0.3 + bpos.r * 0.75 + 0.05})`;
-            box.style.width = `calc(var(--k) * ${bw * 0.75 - 0.1})`;
-            box.style.height = `calc(var(--k) * ${bh * 0.75 - 0.1})`;
+            
+            // 상자 위치와 크기 계산 (-0.11을 빼서 상자 간 명확한 여백 확보)
+            box.style.left = `calc(var(--k) * ${0.5 + bpos.c * 0.75 - 0.05})`;
+            const visual_top_row = 4 - (bpos.r + bh - 1);
+            box.style.top = `calc(var(--k) * ${0.3 + visual_top_row * 0.75 - 0.05})`;
+            box.style.width = `calc(var(--k) * ${bw * 0.75 - 0.11})`;
+            box.style.height = `calc(var(--k) * ${bh * 0.75 - 0.11})`;
             box.style.backgroundColor = color.bg;
             box.style.border = `calc(var(--k) * 0.05) solid ${color.border}`;
+            box.style.boxSizing = 'border-box';
             wrapper.appendChild(box);
 
-            // 해당 박스가 덮는 슬롯 위치 기록
-            for(let rr = 0; rr < bh; rr++) {
-                for(let cc = 0; cc < bw; cc++) {
+            // 물건이 덮일 자리 기록
+            for (let rr = 0; rr < bh; rr++) {
+                for (let cc = 0; cc < bw; cc++) {
                     cellToBox[`${bpos.r + rr}_${bpos.c + cc}`] = i;
                 }
             }
         });
 
-        // 💡 5. 아이템 생성 및 상자 안팎 여부 판별
+        // 💡 5. 아이템 생성 (왼쪽 아래부터 5개 단위로 쌓는 방식)
         divItems = [];
         divOrphanedItems = [];
-        for(let k = 0; k < div_n1; k++) {
+        
+        for (let k = 0; k < div_n1; k++) {
             let img = document.createElement('img');
             img.src = `images/${targetItem}.png`;
             img.className = 'placed-item';
             img.style.zIndex = '2'; 
-            img.style.transition = 'all 0.4s ease-in-out'; // 날아가는 속도 설정
+            img.style.transition = 'all 0.4s ease-in-out'; 
             canvas.appendChild(img);
             divItems.push(img);
 
-            let orig_c = k % 5;
-            let orig_r = Math.floor(k / 5);
+            let orig_c = Math.floor(k / 5);
+            let orig_r = k % 5;
             let key = `${orig_r}_${orig_c}`;
 
-            // 상자가 덮지 못하는 영역에 있는 물건들만 추려냄
+            // 상자가 덮이지 않는 바깥 공간에 있는 물건만 추려냄
             if (cellToBox[key] === undefined) {
                 divOrphanedItems.push({ img, orig_r, orig_c });
             }
         }
 
-        // 💡 6. 빈 슬롯 찾아내기 (남은 물건들이 들어갈 목표 위치)
+        // 💡 6. 빈 슬롯 찾아내기 (남은 물건들이 하나씩 채워질 위치)
         divEmptySlots = [];
-        boxPlacements.forEach((bpos, i) => {
-            for(let rr = 0; rr < bh; rr++) {
-                for(let cc = 0; cc < bw; cc++) {
+        boxPlacements.forEach((bpos) => {
+            for (let cc = 0; cc < bw; cc++) {
+                for (let rr = 0; rr < bh; rr++) {
                     let r = bpos.r + rr;
                     let c = bpos.c + cc;
-                    let origIndex = r * 5 + c;
-                    if (origIndex >= div_n1 || c >= 5) {
+                    let origIndex = c * 5 + r;
+                    // 초기에 물건이 놓이지 않은 빈 자리
+                    if (origIndex >= div_n1) {
                         divEmptySlots.push({r, c});
                     }
                 }
@@ -1331,13 +1338,14 @@
     
     // 아이템을 왼쪽 공간에 5개씩 세로로 배치 (더하기, 빼기 놀이와 동일 규칙 적용)
     function rearrangeDivItems() {
-        const startX1 = 0.5;
-        const startY1 = 0.3; // 박스 그리드와 완벽하게 일치시키기 위해 0.3으로 조정
+        const startX = 0.5;
+        const startY = 0.3; 
         divItems.forEach((img, i) => {
-            const col = i % 5;
-            const row = Math.floor(i / 5);
-            img.style.left = `calc(var(--k) * ${startX1 + col * 0.75})`;
-            img.style.top = `calc(var(--k) * ${startY1 + row * 0.75})`;
+            const col = Math.floor(i / 5);
+            const row = i % 5;
+            const visual_row = 4 - row; // 0이 맨 아래, 4가 맨 위
+            img.style.left = `calc(var(--k) * ${startX + col * 0.75})`;
+            img.style.top = `calc(var(--k) * ${startY + visual_row * 0.75})`;
         });
     }
 
@@ -1350,7 +1358,7 @@
         if (hide) return; 
 
         const lCount = divItems.length;
-        const startX1 = 0.5, startY = 0.3;
+        const startX = 0.5, startY = 0.3;
 
         const createBorder = (x, y) => {
             const border = document.createElement('div');
@@ -1362,8 +1370,8 @@
             canvas.appendChild(border);
         };
 
-        if (lCount >= 10) createBorder(startX1, startY);
-        if (lCount === 20) createBorder(startX1 + 1.5, startY);
+        if (lCount >= 10) createBorder(startX, startY);
+        if (lCount === 20) createBorder(startX + 1.5, startY);
     }
 
     function evaluateDivHintButtonState() {
@@ -1388,35 +1396,39 @@
         const wrapper = document.getElementById('div-zones-wrapper');
         
         if (wrapper) {
-            // 💡 1. 박스 전체 수평 이동 (물건들을 덮음)
+            // 💡 1. 박스 전체 왼쪽으로 스르륵 이동
             wrapper.style.transform = 'translateX(calc(var(--k) * -3.7))';
 
-            // 박스가 모두 이동한 뒤에 물건 비행 애니메이션 시작
+            // 박스 이동이 완료된 후 모션 시작
             setTimeout(() => {
                 if (expectedSessionId !== currentSessionId || isAnswered) return;
                 
-                // 💡 2. 상자 밖에 덩그러니 남은 물건들이 빈 상자 공간으로 차례차례 날아감
+                // 💡 2. 밖에 남겨진 물건들이 빈 상자 공간으로 차례차례 1개씩 날아감
                 let delay = 0;
                 divOrphanedItems.forEach((orphan, idx) => {
                     setTimeout(() => {
                         if (expectedSessionId !== currentSessionId || isAnswered) return;
-                        let targetX = 0.5 + divEmptySlots[idx].c * 0.75;
-                        let targetY = 0.3 + divEmptySlots[idx].r * 0.75;
+                        let targetC = divEmptySlots[idx].c;
+                        let targetR = divEmptySlots[idx].r;
+                        let visual_row = 4 - targetR;
+                        let targetX = 0.5 + targetC * 0.75;
+                        let targetY = 0.3 + visual_row * 0.75;
                         orphan.img.style.left = `calc(var(--k) * ${targetX})`;
                         orphan.img.style.top = `calc(var(--k) * ${targetY})`;
                     }, delay);
-                    delay += 400; // 0.4초 간격으로 한 개씩 출발
+                    delay += 300; // 0.3초 간격으로 한 개씩 출발
                 });
 
-                // 💡 3. 모든 비행이 끝나고 결과를 보여준 뒤 제자리로 복귀
+                // 💡 3. 모든 비행이 끝나고 잠시 보여준 뒤 제자리로 복귀
                 setTimeout(() => {
                     if (expectedSessionId !== currentSessionId || isAnswered) return;
                     wrapper.style.transform = 'translateX(0)';
                     
-                    // 날아갔던 물건들도 다시 원래 위치로
+                    // 날아갔던 물건들도 다시 원래 위치로 자연스럽게 이동
                     divOrphanedItems.forEach((orphan) => {
                         let origX = 0.5 + orphan.orig_c * 0.75;
-                        let origY = 0.3 + orphan.orig_r * 0.75;
+                        let visual_row = 4 - orphan.orig_r;
+                        let origY = 0.3 + visual_row * 0.75;
                         orphan.img.style.left = `calc(var(--k) * ${origX})`;
                         orphan.img.style.top = `calc(var(--k) * ${origY})`;
                     });
@@ -1424,11 +1436,11 @@
                     setTimeout(() => {
                         if (expectedSessionId !== currentSessionId || isAnswered) return;
                         isAnimating = false; 
-                        updateDivBorders(); 
+                        updateDivBorders(false); 
                         evaluateDivHintButtonState();
                     }, 1500);
 
-                }, delay + 2000); // 마지막 아이템 도착 후 2초 대기
+                }, delay + 2000); // 마지막 물건이 채워지고 2초 동안 정답 형태 유지
 
             }, 1500); 
         }

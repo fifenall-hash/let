@@ -1202,7 +1202,6 @@
 
         const canvas = document.getElementById('div-canvas');
         
-        // 애니메이션을 위한 분획구역 전체 래퍼 (이동 속도 0.5s 적용)
         const wrapper = document.createElement('div');
         wrapper.id = 'div-zones-wrapper';
         wrapper.style.position = 'absolute';
@@ -1210,7 +1209,7 @@
         wrapper.style.top = '0';
         wrapper.style.width = '100%';
         wrapper.style.height = '100%';
-        wrapper.style.transition = 'transform 0.5s ease-in-out'; // 💡 변경됨
+        wrapper.style.transition = 'transform 0.5s ease-in-out'; 
         wrapper.style.zIndex = '1';
         canvas.appendChild(wrapper);
 
@@ -1259,7 +1258,6 @@
             const color = colors[i % colors.length];
             const box = document.createElement('div');
             box.style.position = 'absolute';
-            
             box.style.left = `calc(var(--k) * ${0.5 + bpos.c * 0.75 - 0.05})`;
             const visual_top_row = 4 - (bpos.r + bh - 1);
             box.style.top = `calc(var(--k) * ${0.3 + visual_top_row * 0.75 - 0.05})`;
@@ -1268,6 +1266,7 @@
             box.style.backgroundColor = color.bg;
             box.style.border = `calc(var(--k) * 0.05) solid ${color.border}`;
             box.style.boxSizing = 'border-box';
+            box.style.transition = 'opacity 0.5s ease-in-out'; // 💡 상자 투명도 애니메이션 추가
             wrapper.appendChild(box);
 
             for (let rr = 0; rr < bh; rr++) {
@@ -1277,40 +1276,49 @@
             }
         });
 
-        divItems = [];
-        divOrphanedItems = [];
-        
-        for (let k = 0; k < div_n1; k++) {
-            let img = document.createElement('img');
-            img.src = `images/${targetItem}.png`;
-            img.className = 'placed-item';
-            img.style.zIndex = '2'; 
-            img.style.transition = 'all 0.5s ease-in-out'; // 💡 변경됨
-            canvas.appendChild(img);
-            divItems.push(img);
-
-            let orig_c = Math.floor(k / 5);
-            let orig_r = k % 5;
-            let key = `${orig_r}_${orig_c}`;
-
-            if (cellToBox[key] === undefined) {
-                divOrphanedItems.push({ img, orig_r, orig_c });
-            }
-        }
-
+        // 💡 물건 생성 전에 '상자 안의 빈 슬롯'을 먼저 계산하여 아이템별 소속 상자(boxId)를 파악합니다.
         divEmptySlots = [];
-        boxPlacements.forEach((bpos) => {
+        boxPlacements.forEach((bpos, boxIdx) => {
             for (let cc = 0; cc < bw; cc++) {
                 for (let rr = 0; rr < bh; rr++) {
                     let r = bpos.r + rr;
                     let c = bpos.c + cc;
                     let origIndex = c * 5 + r;
                     if (origIndex >= div_n1) {
-                        divEmptySlots.push({r, c});
+                        divEmptySlots.push({r, c, boxId: boxIdx}); // 💡 이 빈자리가 어느 상자 소속인지 저장
                     }
                 }
             }
         });
+
+        divItems = [];
+        divOrphanedItems = [];
+        let orphanCounter = 0; 
+        
+        for (let k = 0; k < div_n1; k++) {
+            let img = document.createElement('img');
+            img.src = `images/${targetItem}.png`;
+            img.className = 'placed-item';
+            img.style.zIndex = '2'; 
+            img.style.transition = 'all 0.5s ease-in-out, opacity 0.5s ease-in-out'; // 💡 물건 투명도 애니메이션 추가
+            canvas.appendChild(img);
+            divItems.push(img);
+
+            let orig_c = Math.floor(k / 5);
+            let orig_r = k % 5;
+            let key = `${orig_r}_${orig_c}`;
+            let finalBoxId = cellToBox[key];
+
+            // 💡 상자가 덮이지 않는 바깥 공간에 있는 물건은 날아갈 목표 상자의 ID를 저장합니다.
+            if (finalBoxId === undefined) {
+                let slot = divEmptySlots[orphanCounter];
+                finalBoxId = slot.boxId;
+                divOrphanedItems.push({ img, orig_r, orig_c });
+                orphanCounter++;
+            }
+
+            img.dataset.boxId = finalBoxId; // 💡 각 물건이 최종적으로 담기는 상자 번호를 기록!
+        }
 
         rearrangeDivItems();
         updateDivBorders();
@@ -1371,7 +1379,7 @@
         }
     }
 
-    function showDivisionHint() {
+   function showDivisionHint() {
         if (isAnswered || isAnimating) return;
         isAnimating = true; evaluateDivHintButtonState();
         updateDivBorders(true); 
@@ -1380,10 +1388,10 @@
         const wrapper = document.getElementById('div-zones-wrapper');
         
         if (wrapper) {
-            // 박스 전체 왼쪽으로 스르륵 이동
+            // 1. 박스 전체 왼쪽으로 이동
             wrapper.style.transform = 'translateX(calc(var(--k) * -3.7))';
 
-            // 💡 상자 이동 0.5초 후 물건 비행 애니메이션 시작
+            // 2. 박스 이동 후(0.5초 뒤) 밖의 물건들 비행 시작
             setTimeout(() => {
                 if (expectedSessionId !== currentSessionId || isAnswered) return;
                 
@@ -1399,31 +1407,53 @@
                         orphan.img.style.left = `calc(var(--k) * ${targetX})`;
                         orphan.img.style.top = `calc(var(--k) * ${targetY})`;
                     }, delay);
-                    delay += 300; // 0.3초 간격
+                    delay += 300; 
                 });
 
-                // 모든 비행이 끝나고 결과를 보여준 뒤 제자리로 복귀
+                // 💡 3. 모든 비행이 끝난 직후, "한 상자의 개수"를 강조하기 위해 0번 상자만 남기고 투명화!
                 setTimeout(() => {
                     if (expectedSessionId !== currentSessionId || isAnswered) return;
-                    wrapper.style.transform = 'translateX(0)';
                     
-                    divOrphanedItems.forEach((orphan) => {
-                        let origX = 0.5 + orphan.orig_c * 0.75;
-                        let visual_row = 4 - orphan.orig_r;
-                        let origY = 0.3 + visual_row * 0.75;
-                        orphan.img.style.left = `calc(var(--k) * ${origX})`;
-                        orphan.img.style.top = `calc(var(--k) * ${origY})`;
+                    const boxes = wrapper.children;
+                    // 첫 번째 상자(0번)를 제외한 나머지 상자 가리기
+                    Array.from(boxes).forEach((box, i) => {
+                        if (i !== 0) box.style.opacity = '0';
+                    });
+                    
+                    // 첫 번째 상자(0번)에 속하지 않은 물건 가리기
+                    divItems.forEach(img => {
+                        if (img.dataset.boxId !== '0') img.style.opacity = '0';
                     });
 
-                    // 💡 제자리 복귀 이동 시간(0.5초) 대기 후 종료 처리
+                    // 💡 4. "한 상자의 개수"를 2초 동안 보여준 뒤 원래대로 복구 시작
                     setTimeout(() => {
                         if (expectedSessionId !== currentSessionId || isAnswered) return;
-                        isAnimating = false; 
-                        updateDivBorders(false); 
-                        evaluateDivHintButtonState();
-                    }, 500);
+                        
+                        // 투명도 원상 복구
+                        Array.from(boxes).forEach((box) => box.style.opacity = '1');
+                        divItems.forEach(img => img.style.opacity = '1');
+                        
+                        // 박스와 밖의 물건들 제자리로 복귀
+                        wrapper.style.transform = 'translateX(0)';
+                        divOrphanedItems.forEach((orphan) => {
+                            let origX = 0.5 + orphan.orig_c * 0.75;
+                            let visual_row = 4 - orphan.orig_r;
+                            let origY = 0.3 + visual_row * 0.75;
+                            orphan.img.style.left = `calc(var(--k) * ${origX})`;
+                            orphan.img.style.top = `calc(var(--k) * ${origY})`;
+                        });
 
-                }, delay + 2000); 
+                        // 복귀 이동 완료(0.5초) 후 애니메이션 종료 처리
+                        setTimeout(() => {
+                            if (expectedSessionId !== currentSessionId || isAnswered) return;
+                            isAnimating = false; 
+                            updateDivBorders(false); 
+                            evaluateDivHintButtonState();
+                        }, 500);
+
+                    }, 2000); // 2초 유지
+
+                }, delay + 300); // 비행이 완료되는 시점에 실행되도록 설정
 
             }, 500); 
         }
